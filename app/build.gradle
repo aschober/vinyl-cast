@@ -34,6 +34,8 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:mediarouter-v7:24.2.1'
+    compile 'com.google.android.gms:play-services-cast-framework:10.0.1'
     // Dagger 2
     compile 'com.google.dagger:dagger:2.0.2'
     apt 'com.google.dagger:dagger-compiler:2.0.2'

@@ -9,12 +9,23 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.util.Log;
 
+import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaMetadata;
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.Session;
+import com.google.android.gms.cast.framework.SessionManager;
+import com.google.android.gms.cast.framework.SessionManagerListener;
+import com.google.android.gms.cast.framework.media.RemoteMediaClient;
+
 import org.apache.commons.io.input.TeeInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+
+import fi.iki.elonen.NanoHTTPD;
 
 import static java.lang.Thread.sleep;
 
@@ -25,12 +36,10 @@ public class MediaRecorderService extends Service {
     private static final int SAMPLE_RATE = 48000; // Hz
     private static final int BIT_RATE = 192000;
 
-    private int NOTIFICATION_ID = 321;
+    private final static int HTTP_SERVER_PORT = 5000;
 
     static final String REQUEST_TYPE = "REQUEST_TYPE";
     static final String REQUEST_TYPE_START = "REQUEST_TYPE_START";
-    static final String REQUEST_TYPE_PLAY = "REQUEST_TYPE_PLAY";
-    static final String REQUEST_TYPE_PAUSE = "REQUEST_TYPE_PAUSE";
     static final String REQUEST_TYPE_STOP = "REQUEST_TYPE_STOP";
 
     private final IBinder binder = new MediaRecorderBinder();
@@ -40,6 +49,12 @@ public class MediaRecorderService extends Service {
     private InputStream mediaRecorderInputStream = null;
 
     private Thread mediaRecorderReadThread = null;
+
+    private HttpServer server;
+
+    private SessionManager castSessionManager;
+    private CastSession castSession;
+    private SessionManagerListener sessionManagerListener;
 
     public MediaRecorderService() {
     }
@@ -53,20 +68,6 @@ public class MediaRecorderService extends Service {
             // Return this instance of MediaRecorderService so clients can call public methods
         //    return MediaRecorderService.this;
         //}
-
-        InputStream getInputStream() {
-            Log.d(TAG, "getInputStream()");
-
-            try {
-                PipedInputStream inputStream = new PipedInputStream();
-                PipedOutputStream outputStream = new PipedOutputStream(inputStream);
-                mediaRecorderInputStream = new TeeInputStream(mediaRecorderInputStream, outputStream, true);
-                return inputStream;
-            } catch (IOException e) {
-                Log.e(TAG, "Exception splitting InputStream", e);
-                return null;
-            }
-        }
     }
 
     class MediaRecorderReadRunnable implements Runnable {
@@ -86,6 +87,9 @@ public class MediaRecorderService extends Service {
                 }
             } catch (IOException | InterruptedException e) {
                 Log.e(TAG, "Exception in MediaRecorderReadRunnable", e);
+                stopRecording();
+                stopHttpServer();
+                stopSelf();
             }
         }
     }
@@ -106,11 +110,20 @@ public class MediaRecorderService extends Service {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand");
+
+        castSession = castSessionManager.getCurrentCastSession();
+
+        if (sessionManagerListener == null) {
+            sessionManagerListener = new SessionManagerListenerImpl();
+            castSessionManager.addSessionManagerListener(sessionManagerListener);
+        }
 
         // Based on https://github.com/columbia/helios_android
         String requestType = intent.getStringExtra(MediaRecorderService.REQUEST_TYPE);
@@ -118,21 +131,47 @@ public class MediaRecorderService extends Service {
 
         if (requestType.equals(MediaRecorderService.REQUEST_TYPE_START)) {
             Log.i(TAG, "Started service");
-            Helpers.createStopNotification("Vinyl Cast", "Stop", this, MediaRecorderService.class, NOTIFICATION_ID);
+            //Helpers.createStopNotification("Vinyl Cast", "Stop", this, MediaRecorderService.class, NOTIFICATION_ID);
+
+            startHttpServer();
             startRecording();
+
+            if (castSession != null) {
+                MediaMetadata audioMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK);
+
+                audioMetadata.putString(MediaMetadata.KEY_TITLE, "Vinyl Track");
+                audioMetadata.putString(MediaMetadata.KEY_ARTIST, "Vinyl Artist");
+
+                String url = "http://" + Helpers.getIpAddress(this) + ":" + HTTP_SERVER_PORT + "/vinyl";
+                MediaInfo mediaInfo = new MediaInfo.Builder(url)
+                        .setStreamType(MediaInfo.STREAM_TYPE_LIVE)
+                        .setContentType("audio/aac")
+                        .setMetadata(audioMetadata)
+                        .build();
+                Log.d(TAG, "MediaInfo: " + mediaInfo);
+                RemoteMediaClient remoteMediaClient = castSession.getRemoteMediaClient();
+                remoteMediaClient.load(mediaInfo);
+            }
         }
 
         if (requestType.equals(MediaRecorderService.REQUEST_TYPE_STOP)) {
             Log.i(TAG, "Stopping service");
             stopRecording();
+            stopHttpServer();
+            stopSelf();
         }
 
         return START_STICKY;
     }
 
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
+        if (sessionManagerListener != null) {
+            castSessionManager.removeSessionManagerListener(sessionManagerListener);
+            sessionManagerListener = null;
+        }
         super.onDestroy();
     }
 
@@ -201,6 +240,112 @@ public class MediaRecorderService extends Service {
         }
 
         stopForeground(true);
-        stopSelf();
+    }
+
+    private InputStream getInputStream() {
+        Log.d(TAG, "getInputStream()");
+
+        try {
+            PipedInputStream inputStream = new PipedInputStream();
+            PipedOutputStream outputStream = new PipedOutputStream(inputStream);
+            mediaRecorderInputStream = new TeeInputStream(mediaRecorderInputStream, outputStream);
+            return inputStream;
+        } catch (IOException e) {
+            Log.e(TAG, "Exception splitting InputStream", e);
+            return null;
+        }
+    }
+
+    private void startHttpServer() {
+        try {
+            server = new HttpServer();
+        } catch (IOException e) {
+            Log.e(TAG, "Exception creating webserver", e);
+        }
+    }
+
+    public void stopHttpServer() {
+        if (server != null) {
+            server.stop();
+        }
+    }
+
+    public class HttpServer extends NanoHTTPD {
+
+        public HttpServer() throws IOException {
+            super(HTTP_SERVER_PORT);
+            start();
+            Log.d(TAG, "Start webserver on port: " + HTTP_SERVER_PORT);
+        }
+
+        @Override
+        public Response serve(IHTTPSession session) {
+            String path = session.getUri();
+            if (path.equals("/vinyl")) {
+                Log.d(TAG, "Received HTTP Request: " + session.getRemoteIpAddress());
+                if (binder == null) {
+                    Log.e(TAG, "MediaRecorderService Binder not available");
+                    return newFixedLengthResponse(Response.Status.NO_CONTENT, "audio/aac", "Input Stream not available");
+                }
+
+                InputStream inputStream = getInputStream();
+                if (inputStream == null) {
+                    Log.e(TAG, "Input Stream not available");
+                    return newFixedLengthResponse(Response.Status.NO_CONTENT, "audio/aac", "Input Stream not available");
+                }
+
+                return newChunkedResponse(Response.Status.OK, "audio/aac", inputStream);
+            } else {
+                return super.serve(session);
+            }
+        }
+    }
+
+    private class SessionManagerListenerImpl implements SessionManagerListener {
+        @Override
+        public void onSessionStarting(Session session) {
+
+        }
+
+        @Override
+        public void onSessionStarted(Session session, String sessionId) {
+        }
+
+        @Override
+        public void onSessionStartFailed(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionEnding(Session session) {
+            Log.d(TAG, "Cast onSessionEnding");
+            stopRecording();
+            stopHttpServer();
+            stopSelf();
+        }
+
+        @Override
+        public void onSessionResumed(Session session, boolean wasSuspended) {
+        }
+
+        @Override
+        public void onSessionResumeFailed(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionSuspended(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionEnded(Session session, int error) {
+            Log.d(TAG, "Cast onSessionEnded");
+        }
+
+        @Override
+        public void onSessionResuming(Session session, String s) {
+
+        }
     }
 }

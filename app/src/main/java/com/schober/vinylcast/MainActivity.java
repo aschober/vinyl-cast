@@ -9,13 +9,16 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import fi.iki.elonen.NanoHTTPD;
+import com.google.android.gms.cast.framework.CastButtonFactory;
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.Session;
+import com.google.android.gms.cast.framework.SessionManager;
+import com.google.android.gms.cast.framework.SessionManagerListener;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -25,8 +28,8 @@ public class MainActivity extends AppCompatActivity {
     boolean serviceBound = false;
     MediaRecorderService.MediaRecorderBinder binder = null;
 
-    private HttpServer server;
-
+    private SessionManager castSessionManager;
+    private CastSession castSession;
 
     //https://github.com/srubin/cs160-audio-examples/blob/master/LoopbackLive/src/com/example/loopbacklive/LoopbackLive.java
     @Override
@@ -34,37 +37,79 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setupHttpServer();
+        castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
 
         // button to initialize loopback
         mLoopbackButton = (Button)findViewById(R.id.loopbackButton);
         mLoopbackButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startIntent = new Intent(MainActivity.this, MediaRecorderService.class);
-
-                if (isServiceRunning(MediaRecorderService.class)) {
-                    if (serviceBound) {
-                        unbindService(serviceConnection);
-                        serviceBound = false;
-                    }
-                    startIntent.putExtra(MediaRecorderService.REQUEST_TYPE, MediaRecorderService.REQUEST_TYPE_STOP);
-                    mLoopbackButton.setText("Start loopback");
+                if (!isServiceRunning(MediaRecorderService.class)) {
+                    startLoopback();
                 } else {
-                    // start service
-                    startIntent.putExtra(MediaRecorderService.REQUEST_TYPE, MediaRecorderService.REQUEST_TYPE_START);
-                    mLoopbackButton.setText("Stop loopback");
-
-                    if (!serviceBound) {
-                        // Bind to LocalService
-                        Intent bindIntent = new Intent(MainActivity.this, MediaRecorderService.class);
-                        bindService(bindIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-                    }
+                    stopLoopback();
                 }
-
-                MainActivity.this.startService(startIntent);
             }
         });
+    }
+
+    public void startLoopback() {
+        if (!isServiceRunning(MediaRecorderService.class)) {
+            if (!serviceBound) {
+                // Bind to LocalService
+                Intent bindIntent = new Intent(MainActivity.this, MediaRecorderService.class);
+                bindService(bindIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            }
+
+            mLoopbackButton.setText("Stop loopback");
+
+            Intent startIntent = new Intent(MainActivity.this, MediaRecorderService.class);
+            startIntent.putExtra(MediaRecorderService.REQUEST_TYPE, MediaRecorderService.REQUEST_TYPE_START);
+            MainActivity.this.startService(startIntent);
+
+        } else {
+            Log.d(TAG, "Service is already running");
+        }
+    }
+
+    public void stopLoopback() {
+        if (isServiceRunning(MediaRecorderService.class)) {
+            if (serviceBound) {
+                unbindService(serviceConnection);
+                serviceBound = false;
+            }
+
+            mLoopbackButton.setText("Start loopback");
+
+            Intent stopIntent = new Intent(MainActivity.this, MediaRecorderService.class);
+            stopIntent.putExtra(MediaRecorderService.REQUEST_TYPE, MediaRecorderService.REQUEST_TYPE_STOP);
+            MainActivity.this.startService(stopIntent);
+
+        } else {
+            Log.d(TAG, "Service is not running");
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.main, menu);
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(),
+                menu,
+                R.id.media_route_menu_item);
+        return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        castSession = castSessionManager.getCurrentCastSession();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        castSession = null;
     }
 
     @Override
@@ -74,47 +119,6 @@ public class MainActivity extends AppCompatActivity {
         if (serviceBound) {
             unbindService(serviceConnection);
             serviceBound = false;
-        }
-    }
-
-    private void setupHttpServer() {
-        try {
-            server = new HttpServer();
-        } catch (IOException e) {
-            Log.e(TAG, "Exception creating webserver", e);
-        }
-    }
-
-    public class HttpServer extends NanoHTTPD {
-        private final static int PORT = 5000;
-
-        public HttpServer() throws IOException {
-            super(PORT);
-            start();
-            Log.d(TAG, "Start webserver on port: " + PORT);
-        }
-
-        @Override
-        public Response serve(IHTTPSession session) {
-            String path = session.getUri();
-
-            if (path.equals("/vinyl")) {
-                Log.d(TAG, "Received Request: " + session);
-                if (binder == null) {
-                    Log.e(TAG, "MediaRecorderService Binder not available");
-                    return newFixedLengthResponse(Response.Status.NO_CONTENT, "audio/aac", "Input Stream not available");
-                }
-
-                InputStream inputStream = binder.getInputStream();
-                if (inputStream == null) {
-                    Log.e(TAG, "Input Stream not available");
-                    return newFixedLengthResponse(Response.Status.NO_CONTENT, "audio/aac", "Input Stream not available");
-                }
-
-                return newChunkedResponse(Response.Status.OK, "audio/aac", inputStream);
-            } else {
-                return super.serve(session);
-            }
         }
     }
 
@@ -151,4 +155,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
+
+
 }
