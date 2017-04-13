@@ -14,10 +14,9 @@ apply plugin: 'com.neenbedankt.android-apt'
 android {
     compileSdkVersion 24
     buildToolsVersion '25.0.0'
-
     defaultConfig {
         applicationId "com.schober.vinylcast"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
@@ -28,6 +27,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    productFlavors {
+    }
 }
 
 dependencies {
@@ -35,15 +36,11 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.android.support:mediarouter-v7:24.2.1'
-    compile 'com.google.android.gms:play-services-cast-framework:10.0.1'
-    // Dagger 2
-    compile 'com.google.dagger:dagger:2.0.2'
-    apt 'com.google.dagger:dagger-compiler:2.0.2'
-    provided 'org.glassfish:javax.annotation:10.0-b28'
-    // Butterknife
-    compile 'com.jakewharton:butterknife:7.0.1'
+    compile 'com.android.support:support-v13:24.2.1'
+    compile 'com.google.android.gms:play-services-cast-framework:10.2.1'
     // HTTP Server
     compile 'org.nanohttpd:nanohttpd:2.3.0'
     // Apache Commons IO
     compile 'commons-io:commons-io:2.5'
+    compile 'org.apache.commons:commons-collections4:4.1'
 }

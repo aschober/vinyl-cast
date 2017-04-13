@@ -2,4 +2,7 @@
     <string name="app_name">Vinyl Cast</string>
 
     <string name="media_route_menu_title">Cast</string>
+
+    <string name="stop">Stop</string>
+
 </resources>

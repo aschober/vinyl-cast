@@ -1,4 +1,4 @@
-package com.schober.vinylcast;
+package com.schober.vinylcast.service;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
  * Runnable used to convert raw PCM audio data from audioRecorderInputStream to an AAC DTS input stream.
  * Based on https://stackoverflow.com/questions/18862715/how-to-generate-the-aac-adts-elementary-stream-with-android-mediacodec
  */
-public class ConvertAudioRunnable implements Runnable {
-    private static final String TAG = "ConvertAudioRunnable";
+public class ConvertAudioTask implements Runnable {
+    private static final String TAG = "ConvertAudioTask";
 
     private static final String CODEC_MIME_TYPE = "audio/mp4a-latm";
     private static final int CODEC_BIT_RATE = 192000;
@@ -27,11 +27,12 @@ public class ConvertAudioRunnable implements Runnable {
 
     // ADTS Header Information from https://wiki.multimedia.cx/index.php/ADTS
     private static final int ADTS_HEADER_AUDIO_OBJECT_TYPE = 2; //AAC LC
-    private static final int ADTS_HEADER_SAMPLE_RATE_INDEX = 3; //48000
+    private static final int ADTS_HEADER_SAMPLE_RATE_INDEX = 3; // 3 = 48000, 4 = 44100
     private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; //2 Channel
 
     private InputStream audioRecorderInputStream;
     private int sampleRate;
+    private int channelCount;
 
     private PipedOutputStream pipedOutputStream;
     private PipedInputStream convertedInputStream;
@@ -42,9 +43,10 @@ public class ConvertAudioRunnable implements Runnable {
      * @param sampleRate
      * @return
      */
-    public InputStream getConvertedInputStream(InputStream audioRecorderInputStream, int sampleRate) {
+    public InputStream getConvertedInputStream(InputStream audioRecorderInputStream, int sampleRate, int channelCount) {
         this.audioRecorderInputStream = audioRecorderInputStream;
         this.sampleRate = sampleRate;
+        this.channelCount = channelCount;
         this.convertedInputStream = new PipedInputStream();
         try {
             pipedOutputStream = new PipedOutputStream(this.convertedInputStream);
@@ -113,9 +115,9 @@ public class ConvertAudioRunnable implements Runnable {
     @Override
     public void run() {
         Log.d(TAG, "starting...");
-        Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO - 1);
+        Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
 
-        MediaFormat format = MediaFormat.createAudioFormat(CODEC_MIME_TYPE, sampleRate, 2);
+        MediaFormat format = MediaFormat.createAudioFormat(CODEC_MIME_TYPE, sampleRate, channelCount);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, CODEC_BIT_RATE);
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, CODEC_BIT_RATE);
