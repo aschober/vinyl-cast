@@ -4,13 +4,19 @@
 
 Vinyl Cast is an Android app used to wirelessly stream the audio of a record vinyl player to Chromecast-enabled devices while also detecting the track being played via audio acr and storing the track metadata in a local db for future features around sharing, review or data analysis.
 
-App makes use of Android's USB audio peripheral support, audio recorder, Cast API and http server-capability to serve an audio stream of a connected audio-sorce to Chromecast-devices while also providing rich metadata and notifications for the analog audio stream via audio acr (automatic content recognition).
+App makes use of Android's USB audio peripheral support, audio recorder, onboard codecs, media APIs, Cast API and http server-capability to serve an audio stream of a connected audio-sorce to Chromecast-devices and providing rich media notifications for the analog audio stream via audio acr (automatic content recognition).
 
-### Simple UI: Tap the record and start streaming
-![screenshot](https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png)
+#### Simple UI: Tap the record to start streaming
 
-### Rich Notifications: Check out what's playing from the notification bar or lockscreen
-![screenshot_20170413-023732](https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png)
+The record in the app spins when actively streaming.
+
+<img src="https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png" width="300">
+
+#### Rich Notifications: Audio ACR + Android Media APIs
+
+Check out what's playing from the notification bar or lockscreen.
+
+<img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="300">
 
 # Required Hardware
 
@@ -47,8 +53,6 @@ Note there is about a 3 sec delay in the audio stream from the record player to 
 
 #### Gracenote SDK for Music ACR
 The Gracenote SDK is used to perform msuic ACR. You will need to provide your own `Client ID` and `Client Tag` in `MusicRecognizer.java`. This can be obtained by signing up and creating an app at the [Gracenote Developer](https://developer.gracenote.com/gnsdk) site.
-
-
 
 
 # Future Ideas
