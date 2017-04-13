@@ -6,6 +6,8 @@ Vinyl Cast is an Android app used to wirelessly stream the audio of a record vin
 
 App makes use of Android's USB audio peripheral support, audio recorder, onboard codecs, media APIs, Cast API and http server-capability to serve an audio stream of a connected audio-sorce to Chromecast-devices and providing rich media notifications for the analog audio stream via audio acr (automatic content recognition).
 
+#### Demo: [YouTube](https://youtu.be/HBDkxEvCcHQ)
+
 #### Simple UI: Tap the record to start streaming
 
 The record in the app spins when actively streaming.
