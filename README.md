@@ -1,10 +1,12 @@
+<img src="https://cloud.githubusercontent.com/assets/3988421/25033468/8d0ed758-20a3-11e7-8dc9-c141ceaeb3a6.png" width="100">
+
 # vinyl-cast
 
 **Listen to vinyl records wirelessly throughout your home.**
 
-Vinyl Cast is an Android app used to wirelessly stream the audio of a record vinyl player to Chromecast-enabled devices while also detecting the track being played via audio acr and storing the track metadata in a local db for future features around sharing, review or data analysis.
+Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player to Chromecast-enabled devices while also detecting the current song being played and displaying the related metadata. The playback history is then stored in a local database for future features around sharing and analysis.
 
-App makes use of Android's USB audio peripheral support, audio recorder, onboard codecs, media APIs, Cast API and http server-capability to serve an audio stream of a connected audio-sorce to Chromecast-devices and providing rich media notifications for the analog audio stream via audio acr (automatic content recognition).
+App makes use of Android's USB audio peripheral support, audio recorder, media codecs, media APIs, Cast API and http server-capability to stream the audio of a connected audio-source to Chromecast-devices. The song metadata is determined via audio acr (automatic content recognition) using fingerprints of the raw audio stream which upon successful matching, provides rich metadata for display and storage.
 
 #### Demo: [YouTube](https://youtu.be/HBDkxEvCcHQ)
 
@@ -12,13 +14,13 @@ App makes use of Android's USB audio peripheral support, audio recorder, onboard
 
 The record in the app spins when actively streaming.
 
-<img src="https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png" width="300">
+<img src="https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png" width="200">
 
 #### Rich Notifications: Audio ACR + Android Media APIs
 
 Check out what's playing from the notification bar or lockscreen.
 
-<img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="300">
+<img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="200">
 
 # Required Hardware
 
@@ -40,7 +42,7 @@ The hardware should be set up as expected with the goal of wirelessly transmitti
 
 **Chromecast -> Powered Speakers**
 
-[TODO: better image/diagram]
+<img src="https://cloud.githubusercontent.com/assets/3988421/25034113/e0cbc72e-20a9-11e7-8be4-b42e6c410c8e.png" width="530">
 
 # Get Streaming
 With the app installed and hardware setup, open the app and tap the vinyl record image to select a Chromecast device and begin streaming.
@@ -51,11 +53,13 @@ Tap the record again to stop the stream or access controls via the Android rich 
 
 Note there is about a 3 sec delay in the audio stream from the record player to Chromecast speakers most likely due to buffering of the audio stream by the Chromecast device.
 
-# Dev Setup
+# Dev Notes
 
 #### Gracenote SDK for Music ACR
-The Gracenote SDK is used to perform msuic ACR. You will need to provide your own `Client ID` and `Client Tag` in `MusicRecognizer.java`. This can be obtained by signing up and creating an app at the [Gracenote Developer](https://developer.gracenote.com/gnsdk) site.
+The Gracenote SDK is used to perform music ACR. You will need to provide your own `Client ID` and `Client Tag` in `MusicRecognizer.java`. This can be obtained by signing up and creating an app at the [Gracenote Developer](https://developer.gracenote.com/gnsdk) site.
 
+#### Audio Conversion
+The app converts the raw 16 bit PCM stereo audio data captured from the USB sound card at a sample rate of 48kHz to an AAC LC 192kbps encoded stream with ADTS headers which is sent via HTTP 1.1 chunked transfer encoding.
 
 # Future Ideas
 
