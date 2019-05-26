@@ -6,9 +6,6 @@ import android.media.MediaRecorder;
 import android.os.Process;
 import android.util.Log;
 
-import com.gracenote.gnsdk.GnException;
-import com.gracenote.gnsdk.GnMusicIdStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -27,7 +24,13 @@ public class AudioRecordTask implements Runnable {
     private static final int AUDIO_CHANNEL_COUNT = 2;
     private static final int AUDIO_BIT_DEPTH = 16;
 
-    private static final int MIN_RAW_BUFFER_SIZE = 2 * AudioRecord.getMinBufferSize(
+    private static final int AUDIO_RECORD_BUFFER_SIZE_BYTES = 2 * AudioRecord.getMinBufferSize(
+            AUDIO_SAMPLE_RATE,
+            AudioFormat.CHANNEL_IN_STEREO,
+            AudioFormat.ENCODING_PCM_16BIT
+    );
+
+    private static final int AUDIO_BUFFER_SIZE = AudioRecord.getMinBufferSize(
             AUDIO_SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_STEREO,
             AudioFormat.ENCODING_PCM_16BIT
@@ -40,19 +43,16 @@ public class AudioRecordTask implements Runnable {
 
     private PipedOutputStream musicDetectOutputStream;
     private PipedInputStream musicDetectInputStream;
-    private GnMusicIdStream musicIdStream;
     private Thread musicDetectThread;
 
-    public AudioRecordTask(GnMusicIdStream musicIdStream) {
-        Log.d(TAG, "AudioRecordTask - BufferSize: " + MIN_RAW_BUFFER_SIZE);
-        this.musicIdStream = musicIdStream;
-
+    public AudioRecordTask() {
+        Log.d(TAG, "AudioRecordTask - AudioRecordBufferSizeBytes: " + AUDIO_RECORD_BUFFER_SIZE_BYTES);
         this.audioRecord = new AudioRecord(
                 AUDIO_SOURCE,
                 AUDIO_SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT,
-                MIN_RAW_BUFFER_SIZE);
+                AUDIO_RECORD_BUFFER_SIZE_BYTES);
 
         this.musicDetectThread = new Thread(new MusicDetectRunnable(), "MusicDetect");
     }
@@ -63,10 +63,10 @@ public class AudioRecordTask implements Runnable {
      */
     public InputStream getRawAudioInputStream() {
         try {
-            this.rawAudioInputStream = new PipedInputStream(MIN_RAW_BUFFER_SIZE);
+            this.rawAudioInputStream = new PipedInputStream(AUDIO_BUFFER_SIZE);
             this.rawAudioOutputStream = new PipedOutputStream(rawAudioInputStream);
 
-            this.musicDetectInputStream = new PipedInputStream(MIN_RAW_BUFFER_SIZE);
+            this.musicDetectInputStream = new PipedInputStream(AUDIO_BUFFER_SIZE);
             this.musicDetectOutputStream = new PipedOutputStream(musicDetectInputStream);
 
             return this.rawAudioInputStream;
@@ -91,7 +91,7 @@ public class AudioRecordTask implements Runnable {
         audioRecord.startRecording();
         musicDetectThread.start();
 
-        byte[] buffer = new byte[MIN_RAW_BUFFER_SIZE];
+        byte[] buffer = new byte[AUDIO_BUFFER_SIZE];
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 int bufferReadResult = audioRecord.read(buffer, 0, buffer.length);
@@ -128,35 +128,25 @@ public class AudioRecordTask implements Runnable {
         private static final String TAG = "MusicDetectRunnable";
 
         public MusicDetectRunnable() {
-            try {
-                musicIdStream.audioProcessStart(AUDIO_SAMPLE_RATE, AUDIO_BIT_DEPTH, AUDIO_CHANNEL_COUNT);
-            } catch (GnException e) {
-                Log.e(TAG, "Exception starting gracenote id", e);
-            }
+
         }
 
         @Override
         public void run() {
             Log.d(TAG, "starting...");
-            Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
 
-            byte[] buffer = new byte[MIN_RAW_BUFFER_SIZE];
+            byte[] buffer = new byte[AUDIO_BUFFER_SIZE];
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     int bufferReadResult = musicDetectInputStream.read(buffer, 0, buffer.length);
-                    musicIdStream.audioProcess(buffer, bufferReadResult);
-                } catch (GnException | IOException e) {
+                } catch (IOException e) {
                     Log.e(TAG, "Exception writing music detect output", e);
                     break;
                 }
             }
 
             Log.d(TAG, "stopping...");
-            try {
-                musicIdStream.audioProcessStop();
-            } catch (GnException e) {
-                Log.e(TAG, "Exception closing streams", e);
-            }
         }
     }
 }

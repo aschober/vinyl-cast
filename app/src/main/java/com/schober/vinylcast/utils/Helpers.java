@@ -8,17 +8,19 @@ import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v7.app.NotificationCompat;
 import android.text.format.Formatter;
+
+import androidx.media.session.MediaButtonReceiver;
 
 import com.schober.vinylcast.R;
 import com.schober.vinylcast.service.MediaRecorderService;
 
 import static android.content.Context.WIFI_SERVICE;
+import static androidx.core.app.NotificationCompat.*;
+import static androidx.media.app.NotificationCompat.*;
 
 /**
  * Created by Allen on 3/26/17.
@@ -38,25 +40,25 @@ public class Helpers {
         MediaMetadataCompat mediaMetadata = controller.getMetadata();
         MediaDescriptionCompat description = mediaMetadata.getDescription();
         // Start foreground service to avoid unexpected kill
-        Notification notification = new NotificationCompat.Builder(context)
+        Notification notification = new Builder(context)
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .setSubText(description.getDescription())
                 .setLargeIcon(description.getIconBitmap())
                 .setDeleteIntent(stopIntent)
                 // Add a pause button
-                .addAction(new android.support.v7.app.NotificationCompat.Action(
+                .addAction(new Action(
                         R.drawable.ic_stop_black_24dp, context.getString(R.string.stop),
                         MediaButtonReceiver.buildMediaButtonPendingIntent(context,
                                 PlaybackStateCompat.ACTION_STOP)))
-                .setStyle(new android.support.v7.app.NotificationCompat.MediaStyle()
+                .setStyle(new MediaStyle()
                         .setMediaSession(mediaSession.getSessionToken())
                         .setShowActionsInCompactView(0)
                         .setShowCancelButton(true)
                         .setCancelButtonIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context,
                                 PlaybackStateCompat.ACTION_STOP)))
                 .setSmallIcon(R.drawable.ic_album_black_24dp)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVisibility(VISIBILITY_PUBLIC)
                 .build();
 
         context.startForeground(NOTIFICATION_ID, notification);

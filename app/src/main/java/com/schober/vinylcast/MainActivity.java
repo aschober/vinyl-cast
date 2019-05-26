@@ -13,13 +13,14 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Process;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.MediaRouteChooserDialogFragment;
-import android.support.v7.app.MediaRouteDialogFactory;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.mediarouter.app.MediaRouteChooserDialogFragment;
+import androidx.mediarouter.app.MediaRouteDialogFactory;
+
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -70,21 +71,21 @@ public class MainActivity extends AppCompatActivity {
 
         castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
 
-        statusText = (TextView) findViewById(R.id.statusText);
-        coverArtImage = (ImageView) findViewById(R.id.coverArtImage);
-        albumTextView = (TextView) findViewById(R.id.albumName);
-        trackTextView = (TextView) findViewById(R.id.trackTitle);
-        artistTextView = (TextView) findViewById(R.id.artistName);
+        statusText = findViewById(R.id.statusText);
+        coverArtImage = findViewById(R.id.coverArtImage);
+        albumTextView = findViewById(R.id.albumName);
+        trackTextView = findViewById(R.id.trackTitle);
+        artistTextView = findViewById(R.id.artistName);
 
         // button to initialize audio
-        startRecordingButton = (ImageButton) findViewById(R.id.startRecordingButton);
+        startRecordingButton = findViewById(R.id.startRecordingButton);
         startRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!isServiceRunning(MediaRecorderService.class)) {
                     castSession = castSessionManager.getCurrentCastSession();
 
-                    if (castSession == null) {
+                    if (castSession == null && false) {
                         openCastDialog();
                         buttonClickedNoCast = true;
                     }
@@ -181,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         // This method is called when the user responds to the permissions dialog
         switch (requestCode) {
             case RECORD_REQUEST_CODE: {

@@ -5,12 +5,13 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.media.MediaBrowserServiceCompat;
+import androidx.media.session.MediaButtonReceiver;
+
 import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -27,7 +28,7 @@ import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.schober.vinylcast.MusicRecognizer;
 import com.schober.vinylcast.utils.Helpers;
 import com.schober.vinylcast.MainActivity;
-import com.schober.vinylcast.StreamHttpServer;
+import com.schober.vinylcast.server.HttpStreamServerImpl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +38,9 @@ import java.util.TimerTask;
 
 public class MediaRecorderService extends MediaBrowserServiceCompat {
     private static final String TAG = "MediaRecorderService";
+
+    public static final String HTTP_SERVER_URL_PATH = "/vinylcast";
+    public static final int HTTP_SERVER_PORT = 8081;
 
     private static final int NOTIFICATION_ID = 321;
 
@@ -52,7 +56,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
     private Thread audioRecordThread = null;
     private Thread convertAudioThread = null;
 
-    private StreamHttpServer server;
+    private HttpStreamServerImpl server;
     private InputStream convertedAudioInputStream = null;
 
     private MediaSessionCompat mediaSession;
@@ -74,7 +78,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
 
         public void setActivity(MainActivity activity) {
             MediaRecorderService.this.activity = activity;
-            musicRecognizer = new MusicRecognizer(MediaRecorderService.this, activity);
+            //musicRecognizer = new MusicRecognizer(MediaRecorderService.this, activity);
             activity.setStatus("" , true);
             start();
         }
@@ -203,7 +207,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
     private void castMedia() {
         if (castSession != null) {
             MediaMetadata audioMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK);
-            String url = "http://" + Helpers.getIpAddress(MediaRecorderService.this) + ":" + StreamHttpServer.HTTP_SERVER_PORT + StreamHttpServer.HTTP_SERVER_URL_PATH;
+            String url = server.getStreamUrl();
             MediaInfo mediaInfo = new MediaInfo.Builder(url)
                     .setStreamType(MediaInfo.STREAM_TYPE_LIVE)
                     .setContentType("audio/aac")
@@ -229,7 +233,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
     }
 
     private void startRecording() {
-        audioRecordTask = new AudioRecordTask(musicRecognizer.getGnMusicIdStream());
+        audioRecordTask = new AudioRecordTask();
         ConvertAudioTask convertAudioTask = new ConvertAudioTask();
 
         convertedAudioInputStream = convertAudioTask.getConvertedInputStream(
@@ -257,7 +261,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
 
     private void startHttpServer() {
         try {
-            server = new StreamHttpServer(convertedAudioInputStream);
+            server = new HttpStreamServerImpl(HTTP_SERVER_URL_PATH, HTTP_SERVER_PORT, convertedAudioInputStream, this);
             server.start();
         } catch (IOException e) {
             Log.e(TAG, "Exception creating webserver", e);
@@ -271,17 +275,21 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
     }
 
     private void startMusicRecognition() {
-        musicRecognizerTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                musicRecognizer.start();
-            }
-        }, 0, MUSIC_RECOGNIZE_INTERVAL);
+        if (musicRecognizer != null) {
+            musicRecognizerTimer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    musicRecognizer.start();
+                }
+            }, 0, MUSIC_RECOGNIZE_INTERVAL);
+        }
     }
 
     private void stopMusicRecognition() {
-        musicRecognizer.stop();
-        musicRecognizerTimer.cancel();
+        if (musicRecognizer != null) {
+            musicRecognizer.stop();
+            musicRecognizerTimer.cancel();
+        }
     }
 
     private class SessionManagerListenerImpl implements SessionManagerListener {
