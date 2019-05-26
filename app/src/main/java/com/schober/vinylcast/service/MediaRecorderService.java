@@ -25,7 +25,7 @@ import com.google.android.gms.cast.framework.Session;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
-import com.schober.vinylcast.MusicRecognizer;
+import com.schober.vinylcast.recognizer.MusicRecognizerImpl;
 import com.schober.vinylcast.utils.Helpers;
 import com.schober.vinylcast.MainActivity;
 import com.schober.vinylcast.server.HttpStreamServerImpl;
@@ -66,7 +66,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
     private CastSession castSession;
     private SessionManagerListener sessionManagerListener;
 
-    private MusicRecognizer musicRecognizer;
+    private MusicRecognizerImpl musicRecognizer;
     private Timer musicRecognizerTimer = new Timer();
     private MainActivity activity;
 
@@ -78,7 +78,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
 
         public void setActivity(MainActivity activity) {
             MediaRecorderService.this.activity = activity;
-            //musicRecognizer = new MusicRecognizer(MediaRecorderService.this, activity);
+            //musicRecognizer = new MusicRecognizerImpl(MediaRecorderService.this, activity);
             activity.setStatus("" , true);
             start();
         }
@@ -103,7 +103,7 @@ public class MediaRecorderService extends MediaBrowserServiceCompat {
         }
 
         public void loadAndDisplayCoverArt(String coverArtUrl, ImageView imageView) {
-            musicRecognizer.loadAndDisplayCoverArt(coverArtUrl, imageView);
+
         }
     }
 
