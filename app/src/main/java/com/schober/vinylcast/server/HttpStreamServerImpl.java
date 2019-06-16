@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.schober.vinylcast.utils.Helpers;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,13 +36,15 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     private Context context;
 
     private String streamUrl;
+    private String contentType;
     private HttpServerClients httpServerClients;
     private Thread readAudioThread;
 
-    public HttpStreamServerImpl(String serverUrlPath, int serverPort, InputStream audioStream, Context context) {
+    public HttpStreamServerImpl(String serverUrlPath, int serverPort, String contentType, InputStream audioStream, Context context) {
         super(serverPort);
         this.serverUrlPath = serverUrlPath;
         this.serverPort = serverPort;
+        this.contentType = contentType;
         this.audioStream = audioStream;
         this.context = context;
 
@@ -59,7 +62,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         readAudioThread = new Thread(new HttpReadAudioStreamRunnable(), "HttpReadAudioStream");
         readAudioThread.start();
 
-        // Set stream url
+        // Set stream url and contentType
         streamUrl = "http://" + Helpers.getIpAddress(context) + ":" + serverPort + serverUrlPath;
         Log.d(TAG, "HTTP Server streaming at: " + streamUrl);
 
@@ -95,6 +98,10 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         return this.streamUrl;
     }
 
+    public String getContentType() {
+        return this.contentType;
+    }
+
     public void addServerListener(HttpStreamServerListener listener) {
         listeners.add(listener);
     }
@@ -126,7 +133,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         @Override
         public void run() {
             Log.d(TAG, "starting...");
-            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+            Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
             byte[] buffer = new byte[AUDIO_READ_BUFFER_SIZE];
             while (!Thread.currentThread().isInterrupted()) {
@@ -164,6 +171,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                 PipedInputStream httpClientInputStream = new PipedInputStream(AUDIO_READ_BUFFER_SIZE);
                 PipedOutputStream httpClientOutputStream = new PipedOutputStream(httpClientInputStream);
                 newClient = new HttpClientImpl(ipAddress, hostname, httpClientInputStream, httpClientOutputStream);
+                writeWAVHeaders(newClient.outputStream);
             } catch (IOException e) {
                 Log.e(TAG, "Exception getting new stream.", e);
                 return null;
@@ -199,7 +207,77 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         List<HttpClientImpl> getHttpClients() {
             return Collections.unmodifiableList(this.httpClients);
         }
+
+
+
+        void writeWAVHeaders(OutputStream outputStream) throws IOException {
+            DataOutputStream dataOutputStream;
+            if (outputStream instanceof DataOutputStream) {
+                dataOutputStream = (DataOutputStream) outputStream;
+            } else {
+                dataOutputStream = new DataOutputStream(outputStream);
+            }
+
+            dataOutputStream.write(HEADER_RIFF);
+            writeInt(dataOutputStream, -1);
+            dataOutputStream.write(HEADER_WAVE);
+            dataOutputStream.write(HEADER_FMT);
+            writeInt(dataOutputStream, HEADER_PCM_SUBCHUNK_1_SIZE);
+            writeShort(dataOutputStream, HEADER_PCM_FORMAT);
+            writeShort(dataOutputStream, (short) DEFAULT_CHANNEL_COUNT);
+            writeInt(dataOutputStream, DEFAULT_SAMPLE_RATE);
+            writeInt(dataOutputStream, getByteRate());
+            writeShort(dataOutputStream, getBlockAlign());
+            writeShort(dataOutputStream, (short) DEFAULT_BITS_PER_SAMPLE);
+            dataOutputStream.write(HEADER_DATA);
+            writeInt(dataOutputStream, -1);
+        }
+
+        /**
+         * Little Endian writing of an integer to the stream.
+         */
+        private void writeInt(DataOutputStream output, int value) throws IOException {
+            output.write(value);
+            output.write(value >> 8);
+            output.write(value >> 16);
+            output.write(value >> 24);
+        }
+
+        /**
+         * Little Endian writing of a short to the stream.
+         */
+        private void writeShort(final DataOutputStream output, final short value) throws IOException {
+            output.write(value);
+            output.write(value >> 8);
+        }
+
+        private int getByteRate() {
+            return DEFAULT_CHANNEL_COUNT * DEFAULT_SAMPLE_RATE * (DEFAULT_BITS_PER_SAMPLE / 8);
+        }
+
+        private short getBlockAlign() {
+            return (short) (DEFAULT_CHANNEL_COUNT * (DEFAULT_BITS_PER_SAMPLE / 8));
+        }
     }
+
+    // "RIFF" in ascii
+    private static final byte[] HEADER_RIFF = new byte[]{0x52, 0x49, 0x46, 0x46};
+    // 36 bytes in the header (add to total size of input)
+    private static final int HEADER_CHUNK_PREFIX_SIZE = 36;
+    // "WAVE" in ascii
+    private static final byte[] HEADER_WAVE = new byte[]{0x57, 0x41, 0x56, 0x45};
+    // "fmt " in ascii
+    private static final byte[] HEADER_FMT = new byte[]{0x66, 0x6d, 0x74, 0x20};
+    // 1 = PCM
+    private static final short HEADER_PCM_FORMAT = 1;
+    // "data" in ascii
+    private static final byte[] HEADER_DATA = new byte[]{0x64, 0x61, 0x74, 0x61};
+    // PCM = 16
+    private static final int HEADER_PCM_SUBCHUNK_1_SIZE = 16;
+
+    private static final int DEFAULT_CHANNEL_COUNT = 2;
+    private static final int DEFAULT_BITS_PER_SAMPLE = 16;
+    private static final int DEFAULT_SAMPLE_RATE = 48000;
 
     class HttpClientImpl implements HttpClient {
         private String ipAddress;

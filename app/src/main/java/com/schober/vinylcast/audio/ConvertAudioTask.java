@@ -1,4 +1,4 @@
-package com.schober.vinylcast.service;
+package com.schober.vinylcast.audio;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -6,15 +6,19 @@ import android.media.MediaFormat;
 import android.os.Process;
 import android.util.Log;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
- * Runnable used to convert raw PCM audio data from audioRecorderInputStream to an AAC DTS input stream.
+ * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC DTS input stream.
  * Based on https://stackoverflow.com/questions/18862715/how-to-generate-the-aac-adts-elementary-stream-with-android-mediacodec
  */
 public class ConvertAudioTask implements Runnable {
@@ -26,46 +30,38 @@ public class ConvertAudioTask implements Runnable {
     private static final boolean CODEC_VERBOSE = false;
 
     // ADTS Header Information from https://wiki.multimedia.cx/index.php/ADTS
-    private static final int ADTS_HEADER_AUDIO_OBJECT_TYPE = 2; //AAC LC
+    private static final int ADTS_HEADER_AUDIO_OBJECT_TYPE = 2; // AAC LC
     private static final int ADTS_HEADER_SAMPLE_RATE_INDEX = 3; // 3 = 48000, 4 = 44100
-    private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; //2 Channel
+    private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; // 2 Channel
 
-    private InputStream audioRecorderInputStream;
+    private InputStream rawAudioInputStream;
     private int sampleRate;
     private int channelCount;
-
-    private PipedOutputStream pipedOutputStream;
-    private PipedInputStream convertedInputStream;
+    private OutputStream convertedAudioOutputStream;
 
     /**
-     * Get InputStream that provides converted audio output. Must be called before starting Runnable.
-     * @param audioRecorderInputStream
+     * Create a ConvertAudioTask
+     * @param rawAudioInputStream
      * @param sampleRate
+     * @param channelCount
      * @return
      */
-    public InputStream getConvertedInputStream(InputStream audioRecorderInputStream, int sampleRate, int channelCount) {
-        this.audioRecorderInputStream = audioRecorderInputStream;
+    public ConvertAudioTask(OutputStream convertedAudioOutputStream, InputStream rawAudioInputStream, int sampleRate, int channelCount) {
+        this.rawAudioInputStream = rawAudioInputStream;
         this.sampleRate = sampleRate;
         this.channelCount = channelCount;
-        this.convertedInputStream = new PipedInputStream();
-        try {
-            pipedOutputStream = new PipedOutputStream(this.convertedInputStream);
-            return convertedInputStream;
-        } catch (IOException e) {
-            Log.e(TAG, "Exception creating output stream", e);
-            return null;
-        }
+        this.convertedAudioOutputStream = convertedAudioOutputStream;
     }
 
     private int queueInputBuffer(MediaCodec codec, int inputBufferId) throws IOException {
         ByteBuffer inputBuffer = codec.getInputBuffer(inputBufferId);
         inputBuffer.clear();
 
-        int bytesAvailable = audioRecorderInputStream.available();
+        // bytesAvailable either 7680 or 0
+        int bytesAvailable = rawAudioInputStream.available();
         int bytesRead = bytesAvailable < inputBuffer.limit() ? bytesAvailable : inputBuffer.limit();
-        byte[] audioRecorderBytes = new byte[bytesRead];
-        audioRecorderInputStream.read(audioRecorderBytes);
-        inputBuffer.put(audioRecorderBytes);
+
+        inputBuffer.put(IOUtils.toByteArray(rawAudioInputStream, bytesRead));
         codec.queueInputBuffer(inputBufferId, 0, bytesRead, 0, 0);
         return bytesRead;
     }
@@ -77,12 +73,13 @@ public class ConvertAudioTask implements Runnable {
 
         outBuf.position(info.offset);
         outBuf.limit(info.offset + outBitsSize);
-        byte[] data = new byte[outPacketSize];
-        addADTStoPacket(data, outPacketSize);
-        outBuf.get(data, 7, outBitsSize);
+
+        byte[] packet = getADTSPacket(outPacketSize);
+        outBuf.get(packet, 7, outBitsSize);
         outBuf.position(info.offset);
-        pipedOutputStream.write(data, 0, outPacketSize);
-        pipedOutputStream.flush();
+
+        convertedAudioOutputStream.write(packet, 0, outPacketSize);
+        convertedAudioOutputStream.flush();
 
         outBuf.clear();
         codec.releaseOutputBuffer(outputBufferId, false);
@@ -112,10 +109,31 @@ public class ConvertAudioTask implements Runnable {
         packet[6] = (byte) 0xFC;
     }
 
+    static final byte[] adtsPacketTemplate = new byte[7];
+    private void initializeADTSPacketTemplate() {
+        adtsPacketTemplate[0] = (byte) 0xFF;
+        adtsPacketTemplate[1] = (byte) 0xF9;
+        adtsPacketTemplate[2] = (byte) (((ADTS_HEADER_AUDIO_OBJECT_TYPE - 1) << 6) + (ADTS_HEADER_SAMPLE_RATE_INDEX << 2) + (ADTS_HEADER_CHANNEL_CONFIG >> 2));
+        adtsPacketTemplate[6] = (byte) 0xFC;
+    }
+
+    private byte[] getADTSPacket(int packetLen) {
+        // create new packet based off template
+        byte[] packet = Arrays.copyOf(adtsPacketTemplate, packetLen);
+
+        // fill in ADTS data for packet length
+        packet[3] = (byte) (((ADTS_HEADER_CHANNEL_CONFIG & 3) << 6) + (packetLen >> 11));
+        packet[4] = (byte) ((packetLen & 0x7FF) >> 3);
+        packet[5] = (byte) (((packetLen & 7) << 5) + 0x1F);
+
+        return packet;
+    }
+
+
     @Override
     public void run() {
         Log.d(TAG, "starting...");
-        Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
         MediaFormat format = MediaFormat.createAudioFormat(CODEC_MIME_TYPE, sampleRate, channelCount);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
@@ -135,6 +153,8 @@ public class ConvertAudioTask implements Runnable {
         int numBytesSubmitted = 0;
         int numBytesDequeued = 0;
         int bufferId;
+
+        initializeADTSPacketTemplate();
 
         while (!Thread.currentThread().isInterrupted()) {
             // MediaCodec InputBuffer
@@ -191,11 +211,12 @@ public class ConvertAudioTask implements Runnable {
             Log.w(TAG, "desiredRatio = " + desiredRatio
                     + ", actualRatio = " + actualRatio);
         }
+        codec.stop();
         codec.release();
 
         Log.d(TAG, "stopping...");
         try {
-            pipedOutputStream.close();
+            convertedAudioOutputStream.close();
         } catch (IOException e) {
             Log.e(TAG, "Exception closing streams", e);
         }
