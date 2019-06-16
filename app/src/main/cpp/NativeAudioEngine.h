@@ -48,6 +48,7 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
 
    private:
     bool mIsRecording = false;
+    bool mSkipLocalPlayback = false;
     uint64_t mProcessedFrameCount = 0;
     uint64_t mSystemStartupFrames = 0;
     int32_t mRecordingDeviceId = oboe::kUnspecified;

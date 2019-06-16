@@ -15,8 +15,8 @@
     <string name="alert_builtin_warning_title">Built-In Audio Devices Selected</string>
     <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.\n\nAre you sure you want to continue?</string>
 
-    <string name="recording_device">Recording device</string>
-    <string name="playback_device">Playback device</string>
+    <string name="recording_device">Local Recording Device</string>
+    <string name="playback_device">Local Playback Device</string>
 
     <string name="notification_channel_name">Recording</string>
 

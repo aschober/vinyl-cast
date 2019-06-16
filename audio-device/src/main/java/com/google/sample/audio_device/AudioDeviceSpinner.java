@@ -29,9 +29,12 @@ import java.util.HashSet;
 import java.util.List;
 
 public class AudioDeviceSpinner extends Spinner {
-
-    private static final int AUTO_SELECT_DEVICE_ID = 0;
     private static final String TAG = AudioDeviceSpinner.class.getName();
+
+    private static final int NONE_DEVICE_ID = -1;
+    private static final int AUTO_SELECT_DEVICE_ID = 0;
+
+    private Context mContext;
     private int mDirectionType;
     private AudioDeviceAdapter mDeviceAdapter;
     private AudioManager mAudioManager;
@@ -73,6 +76,7 @@ public class AudioDeviceSpinner extends Spinner {
     }
 
     private void setup(Context context){
+        mContext = context;
         mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         mDeviceAdapter = new AudioDeviceAdapter(context);
@@ -87,6 +91,14 @@ public class AudioDeviceSpinner extends Spinner {
     @TargetApi(23)
     public void setDirectionType(int directionType){
         this.mDirectionType = directionType;
+
+        if (directionType == AudioManager.GET_DEVICES_OUTPUTS) {
+            // Add a default entry to the list and select it
+            mDeviceAdapter.insert(new AudioDeviceListEntry(NONE_DEVICE_ID, AudioDeviceInfo.TYPE_UNKNOWN,
+                    mContext.getString(R.string.none)), 0);
+            setSelection(0);
+        }
+
         setupAudioDeviceCallback();
     }
 

@@ -50,6 +50,12 @@ void NativeAudioEngine::setRecordingDeviceId(int32_t deviceId) {
 }
 
 void NativeAudioEngine::setPlaybackDeviceId(int32_t deviceId) {
+    if (deviceId == -1) {
+        mSkipLocalPlayback = true;
+        deviceId = 0;
+    } else {
+        mSkipLocalPlayback = false;
+    }
     mPlaybackDeviceId = deviceId;
 }
 
@@ -133,8 +139,8 @@ void NativeAudioEngine::openAllStreams() {
     // stream first, then use properties from the playback stream
     // (e.g. sample rate) to create the recording stream. By matching the
     // properties we should get the lowest latency path
-    openPlaybackStream();
     openRecordingStream();
+    openPlaybackStream();
 
     if (mJavaVm != NULL) {
         JNIEnv* env;
@@ -143,8 +149,8 @@ void NativeAudioEngine::openAllStreams() {
 }
 
 void NativeAudioEngine::startAllStreams() {
-    // Now start the recording stream first so that we can read from it during
-    // the playback stream's dataCallback
+    // Now start the recording stream first so that we can write from it during
+    // the recording stream's dataCallback
     if (mRecordingStream && mPlayStream) {
         startStream(mRecordingStream);
         startStream(mPlayStream);
@@ -161,21 +167,21 @@ void NativeAudioEngine::startAllStreams() {
 void NativeAudioEngine::closeAllStreams() {
     /**
      * Note: The order of events is important here.
-     * The playback stream must be closed before the recording stream. If the
-     * recording stream were to be closed first the playback stream's
-     * callback may attempt to read from the recording stream
-     * which would cause the app to crash since the recording stream would be
+     * The recording stream must be closed before the playback stream. If the
+     * playback stream were to be closed first, the recording stream's
+     * callback may attempt to write to the playback stream
+     * which would cause the app to crash since the playback stream would be
      * null.
      */
-
-    if (mPlayStream != nullptr) {
-        closeStream(mPlayStream);  // Calling close will also stop the stream
-        mPlayStream = nullptr;
-    }
 
     if (mRecordingStream != nullptr) {
         closeStream(mRecordingStream);
         mRecordingStream = nullptr;
+    }
+
+    if (mPlayStream != nullptr) {
+        closeStream(mPlayStream);  // Calling close will also stop the stream
+        mPlayStream = nullptr;
     }
 }
 
@@ -195,9 +201,10 @@ void NativeAudioEngine::openRecordingStream() {
     // Now that the parameters are set up we can open the stream
     oboe::Result result = builder.openStream(&mRecordingStream);
     if (result == oboe::Result::OK && mRecordingStream) {
-        assert(mRecordingStream->getChannelCount() == mInputChannelCount);
-        assert(mRecordingStream->getSampleRate() == mSampleRate);
+        mSampleRate = mRecordingStream->getSampleRate();
+
         assert(mRecordingStream->getFormat() == oboe::AudioFormat::I16);
+        assert(mOutputChannelCount == mRecordingStream->getChannelCount());
 
         // warnIfNotLowLatency(mRecordingStream);
     } else {
@@ -218,14 +225,13 @@ void NativeAudioEngine::openPlaybackStream() {
     setupPlaybackStreamParameters(&builder);
     oboe::Result result = builder.openStream(&mPlayStream);
     if (result == oboe::Result::OK && mPlayStream) {
-        mSampleRate = mPlayStream->getSampleRate();
-
-        assert(mPlayStream->getFormat() == oboe::AudioFormat::I16);
-        assert(mOutputChannelCount == mPlayStream->getChannelCount());
-
         mSystemStartupFrames =
             static_cast<uint64_t>(mSampleRate * kSystemWarmupTime);
         mProcessedFrameCount = 0;
+
+        assert(mPlayStream->getChannelCount() == mInputChannelCount);
+        assert(mPlayStream->getSampleRate() == mSampleRate);
+        assert(mPlayStream->getFormat() == oboe::AudioFormat::I16);
 
         // warnIfNotLowLatency(mPlayStream);
 
@@ -236,16 +242,14 @@ void NativeAudioEngine::openPlaybackStream() {
 }
 
 /**
- * Sets the stream parameters which are specific to recording,
- * including the sample rate which is determined from the
- * playback stream.
- *
+ * Sets the stream parameters which are specific to recording including device
+ * id and the dataCallback function, which must be set for low latency
+ * playback.
  * @param builder The recording stream builder
  */
 oboe::AudioStreamBuilder *NativeAudioEngine::setupRecordingStreamParameters(
     oboe::AudioStreamBuilder *builder) {
-    // This sample uses blocking read() by setting callback to null
-    builder->setCallback(nullptr)
+    builder->setCallback(this)
         ->setDeviceId(mRecordingDeviceId)
         ->setDirection(oboe::Direction::Input)
         ->setSampleRate(mSampleRate)
@@ -255,15 +259,15 @@ oboe::AudioStreamBuilder *NativeAudioEngine::setupRecordingStreamParameters(
 
 /**
  * Sets the stream parameters which are specific to playback, including device
- * id and the dataCallback function, which must be set for low latency
- * playback.
+ * id and the sample rate which is determined from the recording stream.
  * @param builder The playback stream builder
  */
 oboe::AudioStreamBuilder *NativeAudioEngine::setupPlaybackStreamParameters(
     oboe::AudioStreamBuilder *builder) {
-    builder->setCallback(this)
+    builder->setCallback(nullptr)
         ->setDeviceId(mPlaybackDeviceId)
         ->setDirection(oboe::Direction::Output)
+        ->setSampleRate(mSampleRate)
         ->setChannelCount(mOutputChannelCount);
 
     return setupCommonStreamParameters(builder);
@@ -358,59 +362,43 @@ void NativeAudioEngine::warnIfNotLowLatency(oboe::AudioStream *stream) {
 }
 
 /**
- * Handles playback stream's audio request. In this sample, we simply block-read
- * from the record stream for the required samples.
+ * Handles recording stream's audio request. In this method, we simply block-write
+ * to the playback stream for the required samples.
  *
- * @param oboeStream: the playback stream that requesting additional samples
- * @param audioData:  the buffer to load audio samples for playback stream
- * @param numFrames:  number of frames to load to audioData buffer
+ * @param oboeStream: the record stream that providing available samples
+ * @param audioData:  the buffer containing audio samples from record stream
+ * @param numFrames:  number of frames provided in audioData buffer
  * @return: DataCallbackResult::Continue.
  */
 oboe::DataCallbackResult NativeAudioEngine::onAudioReady(
-    oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) {
-    assert(oboeStream == mPlayStream);
+        oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) {
+    assert(oboeStream == mRecordingStream);
 
-    int32_t prevFrameRead = 0, framesRead = 0;
-    if (mProcessedFrameCount < mSystemStartupFrames) {
-        do {
-            // Drain the audio for the starting up period, half second for
-            // this sample.
-            prevFrameRead = framesRead;
-
-            oboe::ResultWithValue<int32_t> status =
-                mRecordingStream->read(audioData, numFrames, 0);
-            framesRead = (!status) ? 0 : status.value();
-            if (framesRead == 0) break;
-
-        } while (framesRead);
-
-        framesRead = prevFrameRead;
-    } else {
-        oboe::ResultWithValue<int32_t> status =
-            mRecordingStream->read(audioData, numFrames, 0);
-        if (!status) {
-            LOGE("input stream read error: %s",
-                 oboe::convertToText(status.error()));
-            return oboe::DataCallbackResult ::Stop;
-        }
-        framesRead = status.value();
-    }
-
+    int32_t framesWritten = 0;
     int32_t bytesPerFrame = mRecordingStream->getChannelCount() *
                             oboeStream->getBytesPerSample();
-    int32_t bytesRead = framesRead * bytesPerFrame;
-    if (framesRead < numFrames) {
-        uint8_t *padPos =
-            static_cast<uint8_t *>(audioData) + bytesRead;
-        memset(padPos, 0, static_cast<size_t>((numFrames - framesRead) * bytesPerFrame));
+    int32_t bytesProvided = numFrames * bytesPerFrame;
+
+    // skip writing audio to play stream if during the startup period or if we're skipping local playback
+    if (mProcessedFrameCount >= mSystemStartupFrames && !mSkipLocalPlayback) {
+        do {
+            oboe::ResultWithValue<int32_t> status =
+                    mPlayStream->write(audioData, numFrames, 0);
+            if (!status) {
+                LOGE("input stream read error: %s",
+                     oboe::convertToText(status.error()));
+                return oboe::DataCallbackResult::Stop;
+            }
+            framesWritten += status.value();
+        } while (numFrames > framesWritten);
     }
 
-    // send to audio callback
-    if (bytesRead > 0 && mJavaVm != NULL) {
+    // send to audio data to jni callback
+    if (bytesProvided > 0 && mJavaVm != NULL) {
         JNIEnv* env;
         mJavaVm->AttachCurrentThread(&env, NULL); // a NO-OP if already attached
-        mAudioCallbackBuffer = env->NewByteArray(bytesRead);
-        env->SetByteArrayRegion(mAudioCallbackBuffer, 0, bytesRead, (jbyte *)audioData);
+        mAudioCallbackBuffer = env->NewByteArray(bytesProvided);
+        env->SetByteArrayRegion(mAudioCallbackBuffer, 0, bytesProvided, (jbyte *)audioData);
         env->CallVoidMethod(mAudioCallbackInstance, mAudioCallbackMethod, mAudioCallbackBuffer);
         env->DeleteLocalRef(mAudioCallbackBuffer);
     };
