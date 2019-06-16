@@ -57,7 +57,7 @@ public class Helpers {
         MediaDescriptionCompat mediaDescription = mediaMetadata == null ? null : mediaMetadata.getDescription();
 
         CharSequence contentTitle = mediaDescription == null ? null : mediaDescription.getTitle();
-        CharSequence contentText = mediaDescription == null ? "Recording Audio" : mediaDescription.getSubtitle();
+        CharSequence contentText = mediaDescription == null ? context.getString(R.string.status_recording) : mediaDescription.getSubtitle();
         CharSequence subText = mediaDescription == null ? null : mediaDescription.getDescription();
         Bitmap largeIcon = mediaDescription == null ? null : mediaDescription.getIconBitmap();
 

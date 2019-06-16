@@ -48,9 +48,6 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
-    private static final int OBOE_API_AAUDIO = 0;
-    private static final int OBOE_API_OPENSL_ES=1;
-
     private static final int RECORD_REQUEST_CODE = 1;
 
     private static final Set<Integer> RECORDING_DEVICES_BUILTIN = new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_BUILTIN_MIC));
@@ -63,13 +60,11 @@ public class MainActivity extends AppCompatActivity {
     private ImageView coverArtImage;
 
     private ImageButton startRecordingButton;
+    private ImageView startRecordingIndicator;
     private Animation buttonAnimation;
 
     private AudioDeviceSpinner recordingDeviceSpinner;
     private AudioDeviceSpinner playbackDeviceSpinner;
-
-    private int apiSelection = OBOE_API_AAUDIO;
-    private boolean aaudioSupported = true;
 
     private boolean serviceBound = false;
     private boolean isServiceRecording = false;
@@ -88,8 +83,9 @@ public class MainActivity extends AppCompatActivity {
         trackTextView = findViewById(R.id.trackTitle);
         artistTextView = findViewById(R.id.artistName);
 
-        // button to initialize audio
+        // button to begin audio record
         startRecordingButton = findViewById(R.id.startRecordingButton);
+        startRecordingIndicator = findViewById(R.id.startRecordingIndicator);
         startRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -97,61 +93,39 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        buttonAnimation = new RotateAnimation(0, 359, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        buttonAnimation = new RotateAnimation(0, 359.5f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         buttonAnimation.setFillAfter(true);
-        buttonAnimation.setDuration(1000);
+        buttonAnimation.setDuration(1800); // ~33.33 RPM
         buttonAnimation.setInterpolator(new LinearInterpolator());
         buttonAnimation.setRepeatCount(Animation.INFINITE);
 
         recordingDeviceSpinner = findViewById(R.id.recording_devices_spinner);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            recordingDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
-            recordingDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                    AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
-                    NativeAudioEngine.setRecordingDeviceId(selectedRecordingDevice.getId());
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
-                    // Do nothing
-                }
-            });
-        }
-
-        playbackDeviceSpinner = findViewById(R.id.playback_devices_spinner);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            playbackDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
-            playbackDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
-                    NativeAudioEngine.setPlaybackDeviceId(selectedPlaybackDevice.getId());
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
-                    // Do nothing
-                }
-            });
-        }
-
-        ((RadioGroup)findViewById(R.id.apiSelectionGroup)).check(R.id.aaudioButton);
-        findViewById(R.id.aaudioButton).setOnClickListener(new RadioButton.OnClickListener(){
+        recordingDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
+        recordingDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                if (((RadioButton)v).isChecked()) {
-                    apiSelection = OBOE_API_AAUDIO;
-                }
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
+                NativeAudioEngine.setRecordingDeviceId(selectedRecordingDevice.getId());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                // Do nothing
             }
         });
-        findViewById(R.id.slesButton).setOnClickListener(new RadioButton.OnClickListener(){
+
+        playbackDeviceSpinner = findViewById(R.id.playback_devices_spinner);
+        playbackDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
+        playbackDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                if (((RadioButton)v).isChecked()) {
-                    apiSelection = OBOE_API_OPENSL_ES;
-                }
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
+                NativeAudioEngine.setPlaybackDeviceId(selectedPlaybackDevice.getId());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                // Do nothing
             }
         });
     }
@@ -178,11 +152,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume");
         super.onResume();
-
-        aaudioSupported = NativeAudioEngine.isAAudioSupported();
-        enableAudioApiUI(true);
-
-        NativeAudioEngine.setAPI(apiSelection);
     }
 
     @Override
@@ -197,24 +166,6 @@ public class MainActivity extends AppCompatActivity {
         // Unbind from the service
         unbindService();
         super.onStop();
-    }
-
-    private void enableAudioApiUI(boolean enable) {
-        if(apiSelection == OBOE_API_AAUDIO && !aaudioSupported)
-        {
-            apiSelection = OBOE_API_OPENSL_ES;
-        }
-        findViewById(R.id.slesButton).setEnabled(enable);
-        if(!aaudioSupported) {
-            findViewById(R.id.aaudioButton).setEnabled(false);
-        } else {
-            findViewById(R.id.aaudioButton).setEnabled(enable);
-        }
-
-        ((RadioGroup)findViewById(R.id.apiSelectionGroup))
-                .check(apiSelection == OBOE_API_AAUDIO ? R.id.aaudioButton : R.id.slesButton);
-
-        setSpinnersEnabled(enable);
     }
 
     private void startRecordingButtonClicked() {
@@ -241,8 +192,8 @@ public class MainActivity extends AppCompatActivity {
 
         if ((RECORDING_DEVICES_BUILTIN.contains(selectedRecordingDevice.getType())) && (PLAYBACK_DEVICES_BUILTIN.contains(selectedPlaybackDevice.getType()))) {
             new AlertDialog.Builder(this)
-                    .setTitle("Built-In Audio Device Selected")
-                    .setMessage("Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to. \n\nAre you sure you want to continue?")
+                    .setTitle(R.string.alert_builtin_warning_title)
+                    .setMessage(R.string.alert_builtin_warning_message)
                     // Specifying a listener allows you to take an action before dismissing the dialog.
                     // The dialog is automatically dismissed when a dialog button is clicked.
                     .setPositiveButton(android.R.string.yes, positiveClickListener)
@@ -266,20 +217,19 @@ public class MainActivity extends AppCompatActivity {
         // If the user previously denied this permission then show a message explaining why this permission is needed
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, requiredPermission)) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage("Permission to access the microphone is required for this app to record audio.")
-                    .setTitle("Permission required")
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            builder.setMessage(R.string.alert_permissions_message)
+                    .setTitle(R.string.alert_permissions_title)
+                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            Log.i(TAG, "Clicked");
                             ActivityCompat.requestPermissions(MainActivity.this, new String[]{requiredPermission}, RECORD_REQUEST_CODE);
                         }
                     });
             AlertDialog dialog = builder.create();
             dialog.show();
+        } else {
+            // request the permission.
+            ActivityCompat.requestPermissions(this, new String[]{requiredPermission}, RECORD_REQUEST_CODE);
         }
-
-        // request the permission.
-        ActivityCompat.requestPermissions(this, new String[]{requiredPermission}, RECORD_REQUEST_CODE);
     }
 
     @Override
@@ -289,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
             case RECORD_REQUEST_CODE: {
                 if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "Permission has been denied by user");
+                    setStatus(getString(R.string.status_record_audio_denied));
                 } else {
                     Log.i(TAG, "Permission has been granted by user");
                     startRecordingButtonClicked();
@@ -322,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void startRecording() {
         if (!isServiceRecording) {
-            NativeAudioEngine.setAPI(apiSelection);
             bindService();
             Intent startIntent = new Intent(MainActivity.this, VinylCastService.class);
             startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
@@ -361,11 +311,15 @@ public class MainActivity extends AppCompatActivity {
     public void updateRecordingState(boolean isRecording) {
         isServiceRecording = isRecording;
         if (isRecording) {
+            setStatus(getString(R.string.status_recording));
+            startRecordingIndicator.setImageResource(R.drawable.ic_media_stop_dark);
             animateRecord(true);
-            enableAudioApiUI(false);
+            setSpinnersEnabled(false);
         } else {
+            setStatus("");
+            startRecordingIndicator.setImageResource(R.drawable.ic_media_play_dark);
             animateRecord(false);
-            enableAudioApiUI(true);
+            setSpinnersEnabled(true);
             unbindService();
         }
     }
@@ -373,29 +327,21 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Public helper to set the application status message
      */
-    public void setStatus(String statusMessage, boolean clearStatus) {
-        runOnUiThread(new UpdateStatusRunnable(statusMessage, clearStatus));
+    public void setStatus(String statusMessage) {
+        runOnUiThread(new UpdateStatusRunnable(statusMessage));
     }
 
     class UpdateStatusRunnable implements Runnable {
-
-        boolean clearStatus;
         String status;
 
-        UpdateStatusRunnable(String status, boolean clearStatus) {
+        UpdateStatusRunnable(String status) {
             this.status = status;
-            this.clearStatus = clearStatus;
         }
 
         @Override
         public void run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);
             statusText.setVisibility(View.VISIBLE);
-            if (clearStatus) {
-                statusText.setText(status);
-            } else {
-                statusText.setText(statusText.getText() + "\n" + status);
-            }
+            statusText.setText(status);
         }
     }
 

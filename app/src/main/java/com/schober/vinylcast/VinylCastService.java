@@ -79,7 +79,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         public void setActivity(MainActivity activity) {
             VinylCastService.this.activity = activity;
-            activity.setStatus("" , true);
             activity.updateRecordingState(isRecording);
         }
     }
