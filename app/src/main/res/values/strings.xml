@@ -6,7 +6,10 @@
     <string name="stop">Stop</string>
     <string name="ok">OK</string>
 
-    <string name="status_recording">Recording Audio</string>
+    <string name="status_preparing">Preparing...</string>
+    <string name="status_ready">Ready</string>
+    <string name="status_recording">Streaming audio at</string>
+    <string name="status_stopped">Stopped</string>
     <string name="status_record_audio_denied">Error - RECORD_AUDIO permission was denied</string>
 
     <string name="alert_permissions_title">Permission Required</string>
@@ -15,9 +18,10 @@
     <string name="alert_builtin_warning_title">Built-In Audio Devices Selected</string>
     <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.\n\nAre you sure you want to continue?</string>
 
-    <string name="recording_device">Local Recording Device</string>
+    <string name="recording_device">Recording Device</string>
     <string name="playback_device">Local Playback Device</string>
 
+    <string name="notification_content_text">Streaming Audio</string>
     <string name="notification_channel_name">Recording</string>
 
 </resources>

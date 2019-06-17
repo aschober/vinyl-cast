@@ -10,21 +10,16 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Process;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
-import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -61,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageButton startRecordingButton;
     private ImageView startRecordingIndicator;
-    private Animation buttonAnimation;
+    private Animation recordingButtonAnimation;
 
     private AudioDeviceSpinner recordingDeviceSpinner;
     private AudioDeviceSpinner playbackDeviceSpinner;
@@ -93,41 +88,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        buttonAnimation = new RotateAnimation(0, 359.5f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        buttonAnimation.setFillAfter(true);
-        buttonAnimation.setDuration(1800); // ~33.33 RPM
-        buttonAnimation.setInterpolator(new LinearInterpolator());
-        buttonAnimation.setRepeatCount(Animation.INFINITE);
+        recordingButtonAnimation = new RotateAnimation(0, 359.5f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        recordingButtonAnimation.setFillAfter(true);
+        recordingButtonAnimation.setDuration(1800); // ~33.33 RPM
+        recordingButtonAnimation.setInterpolator(new LinearInterpolator());
+        recordingButtonAnimation.setRepeatCount(Animation.INFINITE);
 
         recordingDeviceSpinner = findViewById(R.id.recording_devices_spinner);
         recordingDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
-        recordingDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
-                NativeAudioEngine.setRecordingDeviceId(selectedRecordingDevice.getId());
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-                // Do nothing
-            }
-        });
 
         playbackDeviceSpinner = findViewById(R.id.playback_devices_spinner);
         playbackDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
-        playbackDeviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
-                NativeAudioEngine.setPlaybackDeviceId(selectedPlaybackDevice.getId());
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-                // Do nothing
-            }
-        });
     }
 
     @Override
@@ -142,10 +113,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         Log.d(TAG, "onStart");
         super.onStart();
-        // bind to service if it's already running
-        if (isServiceRunning(VinylCastService.class)) {
-            bindService();
-        }
+        // bind to VinylCastService
+        bindService();
     }
 
     @Override
@@ -163,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop");
-        // Unbind from the service
+        // Unbind from VinylCastService
         unbindService();
         super.onStop();
     }
@@ -258,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void bindService() {
         if (!serviceBound) {
-            // Bind to LocalService
+            setStatus(getString(R.string.status_preparing));
             Intent bindIntent = new Intent(MainActivity.this, VinylCastService.class);
             bindService(bindIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
@@ -266,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void unbindService() {
         if (serviceBound) {
+            setStatus(getString(R.string.status_stopped));
             unbindService(serviceConnection);
             serviceBound = false;
         }
@@ -273,7 +243,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void startRecording() {
         if (!isServiceRecording) {
-            bindService();
+            AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
+            NativeAudioEngine.setPlaybackDeviceId(selectedPlaybackDevice.getId());
+            AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
+            NativeAudioEngine.setRecordingDeviceId(selectedRecordingDevice.getId());
+
             Intent startIntent = new Intent(MainActivity.this, VinylCastService.class);
             startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
             MainActivity.this.startService(startIntent);
@@ -299,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void animateRecord(boolean animate) {
         if (animate) {
-            startRecordingButton.startAnimation(buttonAnimation);
+            startRecordingButton.startAnimation(recordingButtonAnimation);
         } else {
             startRecordingButton.clearAnimation();
         }
@@ -311,21 +285,18 @@ public class MainActivity extends AppCompatActivity {
     public void updateRecordingState(boolean isRecording) {
         isServiceRecording = isRecording;
         if (isRecording) {
-            setStatus(getString(R.string.status_recording));
             startRecordingIndicator.setImageResource(R.drawable.ic_media_stop_dark);
             animateRecord(true);
             setSpinnersEnabled(false);
         } else {
-            setStatus("");
             startRecordingIndicator.setImageResource(R.drawable.ic_media_play_dark);
             animateRecord(false);
             setSpinnersEnabled(true);
-            unbindService();
         }
     }
 
     /**
-     * Public helper to set the application status message
+     * Public helper to set the status message
      */
     public void setStatus(String statusMessage) {
         runOnUiThread(new UpdateStatusRunnable(statusMessage));
@@ -354,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName className,
                                        IBinder service) {
             Log.d(TAG, "onServiceConnected");
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            // We've bound to VinylCastService, cast the IBinder and get VinylCastService instance
             binder = (VinylCastService.VinylCastBinder) service;
             serviceBound = true;
             binder.setActivity(MainActivity.this);
