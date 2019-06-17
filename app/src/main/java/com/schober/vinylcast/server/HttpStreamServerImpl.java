@@ -6,6 +6,7 @@ import android.util.Log;
 
 import androidx.annotation.StringDef;
 
+import com.schober.vinylcast.VinylCastService;
 import com.schober.vinylcast.utils.Helpers;
 
 import java.io.DataOutputStream;
@@ -22,6 +23,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import fi.iki.elonen.NanoHTTPD;
+
+import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
+import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 /**
  * HTTP Server handling sending InputStream of data to a client.
@@ -50,11 +54,18 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     private HttpServerClients httpServerClients;
     private Thread readAudioThread;
 
-    public HttpStreamServerImpl(String serverUrlPath, int serverPort, @ContentType String contentType, InputStream audioStream, Context context) {
+    public HttpStreamServerImpl(String serverUrlPath, int serverPort, @VinylCastService.AudioEncoding int audioEncoding, InputStream audioStream, Context context) {
         super(serverPort);
         this.serverUrlPath = serverUrlPath;
         this.serverPort = serverPort;
-        this.contentType = contentType;
+        switch(audioEncoding) {
+            case AUDIO_ENCODING_WAV:
+                this.contentType = CONTENT_TYPE_WAV;
+                break;
+            case AUDIO_ENCODING_AAC:
+                this.contentType = CONTENT_TYPE_AAC;
+                break;
+        }
         this.audioStream = audioStream;
         this.context = context;
 

@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC DTS input stream.
+ * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.
  * Based on https://stackoverflow.com/questions/18862715/how-to-generate-the-aac-adts-elementary-stream-with-android-mediacodec
  */
 public class ConvertAudioTask implements Runnable, AudioStreamProvider {

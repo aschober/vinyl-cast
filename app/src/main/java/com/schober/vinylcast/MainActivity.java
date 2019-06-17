@@ -20,6 +20,8 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -39,6 +41,9 @@ import com.schober.vinylcast.audio.NativeAudioEngine;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
+import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -99,6 +104,24 @@ public class MainActivity extends AppCompatActivity {
 
         playbackDeviceSpinner = findViewById(R.id.playback_devices_spinner);
         playbackDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
+
+        ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonWav);
+        findViewById(R.id.encodingButtonWav).setOnClickListener(new RadioButton.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (((RadioButton) v).isChecked()) {
+                    binder.setAudioEncoding(AUDIO_ENCODING_WAV);
+                }
+            }
+        });
+        findViewById(R.id.encodingButtonAac).setOnClickListener(new RadioButton.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (((RadioButton) v).isChecked()) {
+                    binder.setAudioEncoding(AUDIO_ENCODING_AAC);
+                }
+            }
+        });
     }
 
     @Override
@@ -300,6 +323,20 @@ public class MainActivity extends AppCompatActivity {
      */
     public void setStatus(String statusMessage) {
         runOnUiThread(new UpdateStatusRunnable(statusMessage));
+    }
+
+    /**
+     * Public helper to set the encoding radio buttons
+     */
+    public void setEncoding(@VinylCastService.AudioEncoding int encoding) {
+        switch (encoding) {
+            case AUDIO_ENCODING_WAV:
+                ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonWav);
+                break;
+            case AUDIO_ENCODING_AAC:
+                ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonAac);
+                break;
+        }
     }
 
     class UpdateStatusRunnable implements Runnable {

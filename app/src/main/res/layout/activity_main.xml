@@ -97,6 +97,45 @@
             app:layout_constraintEnd_toEndOf="@+id/right_barrier"
             app:layout_constraintTop_toBottomOf="@+id/playDeviceLabel" />
 
+        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/encodingSelectionGroup"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/playback_devices_spinner">
+
+            <TextView
+                android:id="@+id/encodingTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:text="@string/stream_encoding" />
+
+            <RadioButton
+                android:id="@+id/encodingButtonWav"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginLeft="16dp"
+                android:lines="1"
+                android:maxLines="1"
+                android:text="@string/stream_encoding_wav" />
+
+            <RadioButton
+                android:id="@+id/encodingButtonAac"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:lines="1"
+                android:maxLines="1"
+                android:text="@string/stream_encoding_aac" />
+        </RadioGroup>
+
+
         <androidx.constraintlayout.widget.Barrier
             android:id="@+id/right_barrier"
             android:layout_width="wrap_content"
@@ -122,7 +161,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="top|left"
-            android:text="Status:"
+            android:text="@string/status"
             android:textSize="16sp"
             android:textStyle="bold" />
 

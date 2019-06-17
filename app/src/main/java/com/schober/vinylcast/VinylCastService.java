@@ -9,6 +9,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
@@ -23,12 +24,15 @@ import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.schober.vinylcast.audio.AudioRecordTask;
+import com.schober.vinylcast.audio.ConvertAudioTask;
 import com.schober.vinylcast.server.HttpStreamServer;
 import com.schober.vinylcast.server.HttpStreamServerImpl;
 import com.schober.vinylcast.utils.Helpers;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
 public class VinylCastService extends MediaBrowserServiceCompat {
@@ -40,6 +44,12 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     public static final String ACTION_START_RECORDING = "com.schober.vinylcast.ACTION_START_RECORDING";
     public static final String ACTION_STOP_RECORDING = "com.schober.vinylcast.ACTION_STOP_RECORDING";
 
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({AUDIO_ENCODING_WAV, AUDIO_ENCODING_AAC})
+    public @interface AudioEncoding {}
+    public static final int AUDIO_ENCODING_WAV = 0;
+    public static final int AUDIO_ENCODING_AAC = 1;
+
     private static final int AUDIO_STREAM_BUFFER_SIZE = 8192;
 
     private final IBinder binder = new VinylCastBinder();
@@ -48,6 +58,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private Thread audioRecordThread;
     private Thread convertAudioThread;
     private boolean isRecording = false;
+    private @AudioEncoding int audioEncoding = AUDIO_ENCODING_WAV;
 
     private HttpStreamServer httpStreamServer;
 
@@ -65,6 +76,10 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         public void setActivity(MainActivity activity) {
             VinylCastService.this.activity = activity;
             updateMainActivity();
+        }
+
+        public void setAudioEncoding(@AudioEncoding int audioEncoding) {
+            VinylCastService.this.audioEncoding = audioEncoding;
         }
     }
 
@@ -163,7 +178,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private void start() {
         Log.i(TAG, "start");
         InputStream rawAudioStream = startAudioRecord();
-        startHttpServer(rawAudioStream, HttpStreamServerImpl.CONTENT_TYPE_WAV);
+        startHttpServer(rawAudioStream, audioEncoding);
         isRecording = true;
 
         // put service in the foreground, post notification
@@ -196,11 +211,12 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             audioStream = audioRecordTask.getAudioInputStream();
             audioRecordThread = new Thread(audioRecordTask, "AudioRecord");
             audioRecordThread.start();
-
-//            convertAudioTask = new ConvertAudioTask(audioStream, AUDIO_STREAM_BUFFER_SIZE, audioRecordTask.getSampleRate(), audioRecordTask.getChannelCount());
-//            audioStream = convertAudioTask.getAudioInputStream();
-//            convertAudioThread = new Thread(convertAudioTask, "ConvertAudio");
-//            convertAudioThread.start();
+            if (audioEncoding == AUDIO_ENCODING_AAC) {
+                ConvertAudioTask convertAudioTask = new ConvertAudioTask(audioStream, AUDIO_STREAM_BUFFER_SIZE, audioRecordTask.getSampleRate(), audioRecordTask.getChannelCount());
+                audioStream = convertAudioTask.getAudioInputStream();
+                convertAudioThread = new Thread(convertAudioTask, "ConvertAudio");
+                convertAudioThread.start();
+            }
         } catch (IOException e) {
             Log.e(TAG, "Exception starting audio record task.", e);
             return null;
@@ -220,9 +236,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
     }
 
-    private void startHttpServer(InputStream audioStream, @HttpStreamServerImpl.ContentType String contentType) {
+    private void startHttpServer(InputStream audioStream, @AudioEncoding int audioEncoding) {
         try {
-            httpStreamServer = new HttpStreamServerImpl(HttpStreamServer.HTTP_SERVER_URL_PATH, HttpStreamServer.HTTP_SERVER_PORT, contentType, audioStream, this);
+            httpStreamServer = new HttpStreamServerImpl(HttpStreamServer.HTTP_SERVER_URL_PATH, HttpStreamServer.HTTP_SERVER_PORT, audioEncoding, audioStream, this);
             httpStreamServer.start();
         } catch (IOException e) {
             Log.e(TAG, "Exception creating webserver", e);
@@ -279,6 +295,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             } else {
                 activity.setStatus(getString(R.string.status_ready));
             }
+            activity.setEncoding(audioEncoding);
         }
     }
 
