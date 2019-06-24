@@ -1,7 +1,6 @@
 package com.schober.vinylcast.utils;
 
 import android.content.Context;
-import android.media.session.MediaController;
 
 import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.framework.CastOptions;
@@ -11,7 +10,6 @@ import com.google.android.gms.cast.framework.media.CastMediaOptions;
 import com.google.android.gms.cast.framework.media.MediaIntentReceiver;
 import com.google.android.gms.cast.framework.media.NotificationOptions;
 import com.schober.vinylcast.MainActivity;
-import com.schober.vinylcast.R;
 
 import java.util.ArrayList;
 import java.util.List;

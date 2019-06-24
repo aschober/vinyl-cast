@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.

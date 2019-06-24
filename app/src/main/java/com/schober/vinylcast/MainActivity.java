@@ -245,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
         final FragmentManager fm = getSupportFragmentManager();
         MediaRouteChooserDialogFragment f = MediaRouteDialogFactory.getDefault().onCreateChooserDialogFragment();
         f.setRouteSelector(CastContext.getSharedInstance(this).getMergedSelector());
-        f.show(fm, "android.support.v7.mediarouter:MediaRouteChooserDialogFragment");
+        f.show(fm, "androidx.mediarouter:MediaRouteChooserDialogFragment");
     }
 
     private void bindService() {

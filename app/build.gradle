@@ -51,5 +51,4 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     // Apache Commons IO
     implementation 'commons-io:commons-io:2.5'
-    implementation 'org.apache.commons:commons-collections4:4.1'
 }
