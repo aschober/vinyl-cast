@@ -6,7 +6,7 @@
 
 Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player to Chromecast-enabled devices while also detecting the current song being played and displaying the related metadata. The playback history is then stored in a local database for future features around sharing and analysis.
 
-App makes use of Android's USB audio peripheral support, audio recorder, media codecs, media APIs, Cast API and http server-capability to stream the audio of a connected audio-source to Chromecast-devices. The song metadata is determined via audio acr (automatic content recognition) using fingerprints of the raw audio stream which upon successful matching, provides rich metadata for display and storage.
+App makes use of Android's USB audio peripheral support, audio recorder, media codecs, media APIs, Cast API and http server-capability to stream the audio of a connected audio-source to Chromecast-devices. ~The song metadata is determined via audio acr (automatic content recognition) using fingerprints of the raw audio stream which upon successful matching, provides rich metadata for display and storage.~
 
 #### Demo: [YouTube](https://youtu.be/HBDkxEvCcHQ)
 
@@ -18,17 +18,19 @@ The record in the app spins when actively streaming.
 
 #### Rich Notifications: Audio ACR + Android Media APIs
 
-Check out what's playing from the notification bar or lockscreen.
+NOTE: For now, removed Audio ACR features as the 3rd Party SDK is no longer available.
 
-<img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="200">
+> Check out what's playing from the notification bar or lockscreen.
+> 
+> <img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="200">
 
 # Required Hardware
 
 **Android Phone**: An Android phone will be used to capture raw audio and act as a webserver to stream to Chromecast devices. The app was developed using a Nexus 6.
 
-**USB Soundcard**: A USB sound card is used to capture the raw audio from the Vinyl Record Player and make the raw audio stream available to the app. I would recommend the [Behringer UCA202](http://a.co/35VGwrV) or [Behringer UFO202](http://a.co/hThUxAL). Note if your record player does not have a built-in phono pre-amp, should get the UFO202. The app was developed using a Behringer UCA202. 
+**USB Soundcard**: A USB sound card is used to capture the raw audio from the Vinyl Record Player and make the raw audio stream available to the app. I would recommend the [Behringer UCA202](http://a.co/35VGwrV) or [Behringer UFO202](http://a.co/hThUxAL). If your record player does not have a built-in phono pre-amp, should get the UFO202. The app was developed using a Behringer UCA202. You may also use your record player's USB audio output if available.
 
-**USB OTG Cable**: If your Android device does not have a USB A Female port, you will need a USB OTG cable to attach the soundcard to your device. An OTG y-cable with a power lead like this [one](http://a.co/b7Qw9NI) can be extra useful to save battery power and perhaps charge phone as well.
+**USB OTG Cable**: If your Android device does not have a USB A Female port, you will need a USB OTG cable to attach the USB soundcard to your device. An OTG y-cable with a power lead like this [one](http://a.co/b7Qw9NI) can be extra useful to save battery power and perhaps charge phone as well. A USB-C adapter like this [one](https://www.amazon.com/dp/B07KMC3DTL/ref=cm_sw_r_tw_dp_U_x_6TgeDbFQRBDRE) is also available for USB-C equipped phones.
 
 **Vinyl Record Player**: You'll need a vinyl record player to cast the audio from. If you're not familiar, it will look like [this](http://a.co/63s5QD1)
 
@@ -45,18 +47,21 @@ The hardware should be set up as expected with the goal of wirelessly transmitti
 <img src="https://cloud.githubusercontent.com/assets/3988421/25034113/e0cbc72e-20a9-11e7-8be4-b42e6c410c8e.png" width="530">
 
 # Get Streaming
-With the app installed and hardware setup, open the app and tap the vinyl record image to select a Chromecast device and begin streaming.
+With the app installed and hardware setup:
+- open the app
+- select a `Recording Device` (should see your USB audio input device in dropdown if connected) - default: `Auto select`
+- select a `Local Playback Device` (if you want to hear the recorded audio on the Android-device speakers or USB output device)  - default: `None`
+- select a `Stream Encoding` to adjust how much network bandwidth is used when streaming audio: WAV (lossless but more network bandwidth) or ADTC AAC (lossy but much less network bandwidth) - default: `WAV`
+- tap the vinyl record image to begin audio recording & streaming
+- tap the Cast button to begin streaming to a Cast-enabled device
 
-The vinyl record image will rotate to signify that the app is actively streaming audio.
+The vinyl record image will rotate to signify that the app is actively recording and streaming audio.
 
 Tap the record again to stop the stream or access controls via the Android rich notification.
 
-Note there is about a 3 sec delay in the audio stream from the record player to Chromecast speakers most likely due to buffering of the audio stream by the Chromecast device.
+Note there is about a 3-10 sec delay in the audio stream from the record player to a Cast-enabled device due to buffering of the audio stream by the Cast-enabled device.
 
 # Dev Notes
-
-#### Gracenote SDK for Music ACR
-The Gracenote SDK is used to perform music ACR. You will need to provide your own `Client ID` and `Client Tag` in `MusicRecognizer.java`. This can be obtained by signing up and creating an app at the [Gracenote Developer](https://developer.gracenote.com/gnsdk) site.
 
 #### Audio Conversion
 The app converts the raw 16 bit PCM stereo audio data captured from the USB sound card at a sample rate of 48kHz to an AAC LC 192kbps encoded stream with ADTS headers which is sent via HTTP 1.1 chunked transfer encoding.
