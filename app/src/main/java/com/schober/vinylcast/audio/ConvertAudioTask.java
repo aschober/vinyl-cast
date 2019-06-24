@@ -1,23 +1,27 @@
-package com.schober.vinylcast.service;
+package com.schober.vinylcast.audio;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Process;
 import android.util.Log;
+import android.util.Pair;
+
+import com.schober.vinylcast.utils.Helpers;
+
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Runnable used to convert raw PCM audio data from audioRecorderInputStream to an AAC DTS input stream.
+ * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.
  * Based on https://stackoverflow.com/questions/18862715/how-to-generate-the-aac-adts-elementary-stream-with-android-mediacodec
  */
-public class ConvertAudioTask implements Runnable {
+public class ConvertAudioTask implements Runnable, AudioStreamProvider {
     private static final String TAG = "ConvertAudioTask";
 
     private static final String CODEC_MIME_TYPE = "audio/mp4a-latm";
@@ -26,63 +30,69 @@ public class ConvertAudioTask implements Runnable {
     private static final boolean CODEC_VERBOSE = false;
 
     // ADTS Header Information from https://wiki.multimedia.cx/index.php/ADTS
-    private static final int ADTS_HEADER_AUDIO_OBJECT_TYPE = 2; //AAC LC
+    private static final int ADTS_HEADER_AUDIO_OBJECT_TYPE = 2; // AAC LC
     private static final int ADTS_HEADER_SAMPLE_RATE_INDEX = 3; // 3 = 48000, 4 = 44100
-    private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; //2 Channel
+    private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; // 2 Channel
 
-    private InputStream audioRecorderInputStream;
+    private InputStream nativeAudioStream;
     private int sampleRate;
     private int channelCount;
-
-    private PipedOutputStream pipedOutputStream;
-    private PipedInputStream convertedInputStream;
+    private Pair<OutputStream, InputStream> convertedAudioStreams;
 
     /**
-     * Get InputStream that provides converted audio output. Must be called before starting Runnable.
-     * @param audioRecorderInputStream
+     * Create a ConvertAudioTask
+     * @param bufferSize
      * @param sampleRate
-     * @return
+     * @param channelCount
      */
-    public InputStream getConvertedInputStream(InputStream audioRecorderInputStream, int sampleRate, int channelCount) {
-        this.audioRecorderInputStream = audioRecorderInputStream;
+    public ConvertAudioTask(InputStream nativeAudioStream, int bufferSize, int sampleRate, int channelCount) throws IOException {
+        this.nativeAudioStream = nativeAudioStream;
         this.sampleRate = sampleRate;
         this.channelCount = channelCount;
-        this.convertedInputStream = new PipedInputStream();
-        try {
-            pipedOutputStream = new PipedOutputStream(this.convertedInputStream);
-            return convertedInputStream;
-        } catch (IOException e) {
-            Log.e(TAG, "Exception creating output stream", e);
-            return null;
-        }
+        this.convertedAudioStreams = Helpers.getPipedAudioStreams(bufferSize);
     }
 
-    private int queueInputBuffer(MediaCodec codec, int inputBufferId) throws IOException {
+    /**
+     * Handle providing raw audio to MediaCodec InputBuffer
+     * @param codec
+     * @param inputBufferId
+     * @return number bytes provided
+     * @throws IOException
+     */
+    private int queueCodecInputBuffer(MediaCodec codec, int inputBufferId) throws IOException {
         ByteBuffer inputBuffer = codec.getInputBuffer(inputBufferId);
         inputBuffer.clear();
 
-        int bytesAvailable = audioRecorderInputStream.available();
-        int bytesRead = bytesAvailable < inputBuffer.limit() ? bytesAvailable : inputBuffer.limit();
-        byte[] audioRecorderBytes = new byte[bytesRead];
-        audioRecorderInputStream.read(audioRecorderBytes);
-        inputBuffer.put(audioRecorderBytes);
-        codec.queueInputBuffer(inputBufferId, 0, bytesRead, 0, 0);
-        return bytesRead;
+        int bytesAvailable = nativeAudioStream.available();
+        int bytesToWrite = bytesAvailable < inputBuffer.limit() ? bytesAvailable : inputBuffer.limit();
+
+        inputBuffer.put(IOUtils.toByteArray(nativeAudioStream, bytesToWrite));
+        codec.queueInputBuffer(inputBufferId, 0, bytesToWrite, 0, 0);
+        return bytesToWrite;
     }
 
-    private int dequeueOutputBuffer(MediaCodec codec, int outputBufferId, MediaCodec.BufferInfo info) throws IOException {
+    /**
+     * Handle reading encoded audio from MediaCodec OutputBuffer
+     * @param codec
+     * @param outputBufferId
+     * @param info
+     * @return number bytes read
+     * @throws IOException
+     */
+    private int dequeueCodecOutputBuffer(MediaCodec codec, int outputBufferId, MediaCodec.BufferInfo info) throws IOException {
         int outBitsSize = info.size;
         int outPacketSize = outBitsSize + 7;    // 7 is ADTS header size
         ByteBuffer outBuf = codec.getOutputBuffer(outputBufferId);
 
         outBuf.position(info.offset);
         outBuf.limit(info.offset + outBitsSize);
-        byte[] data = new byte[outPacketSize];
-        addADTStoPacket(data, outPacketSize);
-        outBuf.get(data, 7, outBitsSize);
-        outBuf.position(info.offset);
-        pipedOutputStream.write(data, 0, outPacketSize);
-        pipedOutputStream.flush();
+
+        byte[] packet = new byte[outPacketSize];
+        addADTStoPacket(packet, outPacketSize);
+        outBuf.get(packet, 7, outBitsSize);
+
+        convertedAudioStreams.first.write(packet, 0, outPacketSize);
+        convertedAudioStreams.first.flush();
 
         outBuf.clear();
         codec.releaseOutputBuffer(outputBufferId, false);
@@ -141,7 +151,7 @@ public class ConvertAudioTask implements Runnable {
             bufferId = codec.dequeueInputBuffer(CODEC_TIMEOUT);
             try {
                 if (bufferId != MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    int size = queueInputBuffer(codec, bufferId);
+                    int size = queueCodecInputBuffer(codec, bufferId);
                     numBytesSubmitted += size;
                     if (CODEC_VERBOSE && size > 0) {
                         Log.d(TAG, "queued " + size + " bytes of input data.");
@@ -161,7 +171,7 @@ public class ConvertAudioTask implements Runnable {
             } else {
                 try {
                     if (bufferId >= 0) {
-                        int outBitsSize = dequeueOutputBuffer(codec, bufferId, info);
+                        int outBitsSize = dequeueCodecOutputBuffer(codec, bufferId, info);
                         numBytesDequeued += outBitsSize;
                         if (CODEC_VERBOSE) {
                             Log.d(TAG, "  dequeued " + outBitsSize + " bytes of output data.");
@@ -191,13 +201,19 @@ public class ConvertAudioTask implements Runnable {
             Log.w(TAG, "desiredRatio = " + desiredRatio
                     + ", actualRatio = " + actualRatio);
         }
+        codec.stop();
         codec.release();
 
         Log.d(TAG, "stopping...");
         try {
-            pipedOutputStream.close();
+            convertedAudioStreams.first.close();
         } catch (IOException e) {
             Log.e(TAG, "Exception closing streams", e);
         }
+    }
+
+    @Override
+    public InputStream getAudioInputStream() {
+        return convertedAudioStreams.second;
     }
 }

@@ -3,23 +3,26 @@ buildscript {
         jcenter()
         mavenCentral()
     }
-
-    dependencies {
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
-    }
 }
 apply plugin: 'com.android.application'
-apply plugin: 'com.neenbedankt.android-apt'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.schober.vinylcast"
         minSdkVersion 23
-        targetSdkVersion 24
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_TOOLCHAIN=clang'
+                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            }
+        }
     }
     buildTypes {
         release {
@@ -27,20 +30,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
     productFlavors {
     }
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:24.2.1'
-    compile 'com.android.support:mediarouter-v7:24.2.1'
-    compile 'com.android.support:support-v13:24.2.1'
-    compile 'com.google.android.gms:play-services-cast-framework:10.2.1'
+    implementation project(':audio-device')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    testImplementation 'junit:junit:4.12'
+    implementation 'androidx.appcompat:appcompat:1.1.0-beta01'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.mediarouter:mediarouter:1.0.0'
+    implementation 'com.google.android.gms:play-services-cast-framework:16.2.0'
     // HTTP Server
-    compile 'org.nanohttpd:nanohttpd:2.3.0'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
     // Apache Commons IO
-    compile 'commons-io:commons-io:2.5'
-    compile 'org.apache.commons:commons-collections4:4.1'
+    implementation 'commons-io:commons-io:2.5'
 }
