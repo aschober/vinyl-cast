@@ -20,7 +20,7 @@ get_filename_component(VINYL_CAST_ROOT_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../.. ABSOLUTE)
 
 ### INCLUDE OBOE LIBRARY ###
-set (OBOE_DIR ${VINYL_CAST_ROOT_DIR}/../oboe)
+set (OBOE_DIR ${VINYL_CAST_ROOT_DIR}/oboe)
 add_subdirectory(${OBOE_DIR} ./oboe-bin)
 
 add_library(vinylCast
