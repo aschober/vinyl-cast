@@ -5,7 +5,7 @@
     android:id="@+id/landscapeConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.schober.vinylcast.MainActivity">
+    tools:context="tech.schober.vinylcast.MainActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="fill_parent"

@@ -1,4 +1,4 @@
-package com.schober.vinylcast.audio;
+package tech.schober.vinylcast.audio;
 
 import java.io.InputStream;
 

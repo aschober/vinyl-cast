@@ -1,4 +1,4 @@
-package com.schober.vinylcast;
+package tech.schober.vinylcast;
 
 import android.content.Intent;
 import android.os.Binder;
@@ -23,11 +23,11 @@ import com.google.android.gms.cast.framework.Session;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
-import com.schober.vinylcast.audio.AudioRecordTask;
-import com.schober.vinylcast.audio.ConvertAudioTask;
-import com.schober.vinylcast.server.HttpStreamServer;
-import com.schober.vinylcast.server.HttpStreamServerImpl;
-import com.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.audio.AudioRecordTask;
+import tech.schober.vinylcast.audio.ConvertAudioTask;
+import tech.schober.vinylcast.server.HttpStreamServer;
+import tech.schober.vinylcast.server.HttpStreamServerImpl;
+import tech.schober.vinylcast.utils.Helpers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,11 +38,11 @@ import java.util.List;
 public class VinylCastService extends MediaBrowserServiceCompat {
     private static final String TAG = "VinylCastService";
 
-    private static final String NOTIFICATION_CHANNEL_ID = "com.schober.vinylcast.CHANNEL_ACTIVELY_RECORDING";
+    private static final String NOTIFICATION_CHANNEL_ID = "tech.schober.vinylcast.CHANNEL_ACTIVELY_RECORDING";
     private static final int NOTIFICATION_ID = 4242;
 
-    public static final String ACTION_START_RECORDING = "com.schober.vinylcast.ACTION_START_RECORDING";
-    public static final String ACTION_STOP_RECORDING = "com.schober.vinylcast.ACTION_STOP_RECORDING";
+    public static final String ACTION_START_RECORDING = "tech.schober.vinylcast.ACTION_START_RECORDING";
+    public static final String ACTION_STOP_RECORDING = "tech.schober.vinylcast.ACTION_STOP_RECORDING";
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({AUDIO_ENCODING_WAV, AUDIO_ENCODING_AAC})

@@ -1,8 +1,8 @@
-package com.schober.vinylcast;
+package tech.schober.vinylcast;
 
 import android.app.Application;
 
-import com.schober.vinylcast.audio.NativeAudioEngine;
+import tech.schober.vinylcast.audio.NativeAudioEngine;
 
 public class VinylCastApplication extends Application {
 

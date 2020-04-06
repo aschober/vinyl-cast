@@ -1,10 +1,10 @@
-package com.schober.vinylcast.audio;
+package tech.schober.vinylcast.audio;
 
 import android.os.Process;
 import android.util.Log;
 import android.util.Pair;
 
-import com.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.utils.Helpers;
 
 import java.io.IOException;
 import java.io.InputStream;

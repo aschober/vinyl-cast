@@ -1,4 +1,4 @@
-package com.schober.vinylcast.utils;
+package tech.schober.vinylcast.utils;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -8,7 +8,6 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -21,9 +20,9 @@ import android.util.Pair;
 
 import androidx.media.session.MediaButtonReceiver;
 
-import com.schober.vinylcast.MainActivity;
-import com.schober.vinylcast.R;
-import com.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.MainActivity;
+import tech.schober.vinylcast.R;
+import tech.schober.vinylcast.VinylCastService;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package com.schober.vinylcast.server;
+package tech.schober.vinylcast.server;
 
 import android.content.Context;
 import android.os.Process;
@@ -6,8 +6,8 @@ import android.util.Log;
 
 import androidx.annotation.StringDef;
 
-import com.schober.vinylcast.VinylCastService;
-import com.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.utils.Helpers;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import fi.iki.elonen.NanoHTTPD;
 
-import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
-import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
+import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
+import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 /**
  * HTTP Server handling sending InputStream of data to a client.

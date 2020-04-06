@@ -1,4 +1,4 @@
-package com.schober.vinylcast.audio;
+package tech.schober.vinylcast.audio;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -7,7 +7,7 @@ import android.os.Process;
 import android.util.Log;
 import android.util.Pair;
 
-import com.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.utils.Helpers;
 
 import org.apache.commons.io.IOUtils;
 

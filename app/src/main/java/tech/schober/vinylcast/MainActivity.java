@@ -1,4 +1,4 @@
-package com.schober.vinylcast;
+package tech.schober.vinylcast;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -36,14 +36,14 @@ import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.sample.audio_device.AudioDeviceListEntry;
 import com.google.sample.audio_device.AudioDeviceSpinner;
-import com.schober.vinylcast.audio.NativeAudioEngine;
+import tech.schober.vinylcast.audio.NativeAudioEngine;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
-import static com.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
+import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
+import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";

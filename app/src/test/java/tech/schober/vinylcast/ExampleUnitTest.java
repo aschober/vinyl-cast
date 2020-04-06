@@ -1,4 +1,4 @@
-package com.schober.vinylcast;
+package tech.schober.vinylcast;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.schober.vinylcast.server;
+package tech.schober.vinylcast.server;
 
 import java.io.IOException;
 
