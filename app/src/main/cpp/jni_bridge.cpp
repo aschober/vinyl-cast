@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Based on jni_bridge.cpp
+ * https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/jni_bridge.cpp
+ *
+ * Modifications Copyright 2020 Allen Schober
+ *
  */
 
 #include <jni.h>

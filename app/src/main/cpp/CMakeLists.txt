@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Based on CMakeLists.txt
+# https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/CMakeLists.txt
+#
+# Modifications Copyright 2020 Allen Schober
+#
+
 cmake_minimum_required(VERSION 3.4.1)
 project(vinylCast LANGUAGES C CXX)
 
@@ -26,6 +32,7 @@ add_subdirectory(${OBOE_DIR} ./oboe-bin)
 add_library(vinylCast
     SHARED
         NativeAudioEngine.cpp
+        FullDuplexStream.cpp
         jni_bridge.cpp
         ${VINYL_CAST_ROOT_DIR}/debug-utils/trace.cpp)
 target_include_directories(vinylCast

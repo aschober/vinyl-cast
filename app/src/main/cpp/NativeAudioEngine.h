@@ -12,6 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Based on LiveEffectEngine.h
+ * https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/LiveEffectEngine.h
+ *
+ * Modifications Copyright 2020 Allen Schober
+ *
  */
 
 #ifndef OBOE_NATIVEAUDIOENGINE_H
@@ -21,6 +27,7 @@
 #include <oboe/Oboe.h>
 #include <string>
 #include <thread>
+#include "FullDuplexPassthru.h"
 
 class NativeAudioEngine : public oboe::AudioStreamCallback {
    public:
@@ -29,8 +36,8 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void setRecordingDeviceId(int32_t deviceId);
     void setPlaybackDeviceId(int32_t deviceId);
 
-    void prepareRecording();
-    void startRecording();
+    oboe::Result prepareRecording();
+    oboe::Result startRecording();
     void stopRecording();
 
     /*
@@ -51,29 +58,22 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
    private:
     FullDuplexPassthru mFullDuplexPassthru;
     bool mIsRecording = false;
-    bool mSkipLocalPlayback = false;
     int32_t mRecordingDeviceId = oboe::kUnspecified;
     int32_t mPlaybackDeviceId = oboe::kUnspecified;
     oboe::AudioFormat mFormat = oboe::AudioFormat::I16;
     int32_t mSampleRate = oboe::kUnspecified;
     int32_t mInputChannelCount = oboe::ChannelCount::Stereo;
     int32_t mOutputChannelCount = oboe::ChannelCount::Stereo;
+    oboe::AudioApi mAudioApi = oboe::AudioApi::AAudio;
 
     oboe::ManagedStream mRecordingStream;
     oboe::ManagedStream mPlayStream;
 
-    oboe::AudioApi mAudioApi = oboe::AudioApi::AAudio;
+    oboe::Result openAllStreams();
+    void closeAllStreams();
 
     oboe::Result openRecordingStream();
     oboe::Result openPlaybackStream();
-
-    oboe::Result startStream(oboe::ManagedStream &stream);
-    void stopStream(oboe::ManagedStream &stream);
-    void closeStream(oboe::ManagedStream &stream);
-
-    oboe::Result openAllStreams();
-    oboe::Result startAllStreams();
-    void closeAllStreams();
 
     oboe::AudioStreamBuilder *setupCommonStreamParameters(
         oboe::AudioStreamBuilder *builder);
@@ -81,6 +81,8 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
         oboe::AudioStreamBuilder *builder);
     oboe::AudioStreamBuilder *setupPlaybackStreamParameters(
         oboe::AudioStreamBuilder *builder);
+
+    void closeStream(oboe::ManagedStream &stream);
     void warnIfNotLowLatency(oboe::ManagedStream &stream);
 };
 

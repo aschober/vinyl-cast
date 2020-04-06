@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Based on LiveEffectEngine.cpp
+ * https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/LiveEffectEngine.cpp
+ *
+ * Modifications Copyright 2020 Allen Schober
+ *
  */
 
 #include <cassert>
@@ -20,16 +26,13 @@
 
 #include "NativeAudioEngine.h"
 
-static JavaVM* mJavaVm;
-static jobject mAudioDataCallbackInstance;
-static jmethodID mAudioDataCallbackMethod;
-
 NativeAudioEngine::NativeAudioEngine() {
     assert(mOutputChannelCount == mInputChannelCount);
 }
 
 NativeAudioEngine::~NativeAudioEngine() {
 
+    mFullDuplexPassthru.stop();
     closeStream(mPlayStream);
     closeStream(mRecordingStream);
 }
@@ -40,10 +43,10 @@ void NativeAudioEngine::setRecordingDeviceId(int32_t deviceId) {
 
 void NativeAudioEngine::setPlaybackDeviceId(int32_t deviceId) {
     if (deviceId == -1) {
-        mSkipLocalPlayback = true;
+        mFullDuplexPassthru.setSkipLocalPlayback(true);
         deviceId = 0;
     } else {
-        mSkipLocalPlayback = false;
+        mFullDuplexPassthru.setSkipLocalPlayback(false);
     }
     mPlaybackDeviceId = deviceId;
 }
@@ -72,9 +75,9 @@ void NativeAudioEngine::setAudioDataListener(JNIEnv *env, jobject instance, jobj
         return;
     }
 
+    JavaVM* mJavaVm;
     env->GetJavaVM(&mJavaVm); //store JavaVM reference for later use of env
-    mAudioDataCallbackInstance = env->NewGlobalRef(callbackObject);
-    mAudioDataCallbackMethod = jMethodIdOnAudioData;
+    mFullDuplexPassthru.setAudioDataCallback(mJavaVm, env->NewGlobalRef(callbackObject), jMethodIdOnAudioData);
 }
 
 int32_t NativeAudioEngine::getSampleRate() {
@@ -95,77 +98,35 @@ int32_t NativeAudioEngine::getChannelCount() {
     }
 }
 
-void NativeAudioEngine::prepareRecording() {
-    if (!mIsRecording) {
-        openAllStreams();
-    } else {
-        LOGW("Recording already in progress - ignoring this request");
-    }
-}
-
-void NativeAudioEngine::startRecording() {
+oboe::Result NativeAudioEngine::prepareRecording() {
     if (mIsRecording) {
         LOGW("Recording already in progress - ignoring this request");
-    } else if (mRecordingStream && mPlayStream) {
-        mIsRecording = true;
-        startAllStreams();
-    } else {
-        LOGE("Recording and/or Playback streams not created yet. Need to call prepareRecording() first.");
-    }
-}
-
-void NativeAudioEngine::stopRecording() {
-    if (mIsRecording) {
-        closeAllStreams();
-        mIsRecording = false;
-    } else {
-        LOGW("Recording not in progress - ignoring this request");
-    }
-}
-
-
-oboe::Result NativeAudioEngine::openAllStreams() {
-    // Note: The order of stream creation is important. We create the recording
-    // stream first, then use properties from the recording stream
-    // (e.g. sample rate) to create the playback stream. By matching the
-    // properties we should get the lowest latency path.
-    oboe::Result result = openRecordingStream();
-    if (result != oboe::Result::OK) {
-        closeAllStreams();
-        return result;
-    }
-    result = openPlaybackStream();
-    if (result != oboe::Result::OK) {
-        closeAllStreams();
-        return result;
+        return oboe::Result::OK;
     }
 
-    if (mJavaVm != NULL) {
-        JNIEnv* env;
-        mJavaVm->AttachCurrentThread(&env, NULL);
+    oboe::Result result = openAllStreams();
+
+    if (result == oboe::Result::OK) {
+        mFullDuplexPassthru.setInputStream(mRecordingStream.get());
+        mFullDuplexPassthru.setOutputStream(mPlayStream.get());
     }
+
     return result;
 }
 
-oboe::Result NativeAudioEngine::startAllStreams() {
-    // Now start the recording stream first so that we can write from it during
-    // the recording stream's dataCallback
+oboe::Result NativeAudioEngine::startRecording() {
+    if (mIsRecording) {
+        LOGW("Recording already in progress - ignoring this request");
+        return oboe::Result::OK;
+    }
+
     if (mRecordingStream && mPlayStream) {
-        oboe::Result result = startStream(mRecordingStream);
-        if (result != oboe::Result::OK) {
-            LOGE("Failed to start recording stream. Error: %s", oboe::convertToText(result));
-            return result;
-        }
-        result = startStream(mPlayStream);
-        if (result != oboe::Result::OK) {
-            LOGE("Failed to start playback stream. Error: %s", oboe::convertToText(result));
-            return result;
-        }
+        mIsRecording = true;
+        oboe::Result result = mFullDuplexPassthru.start();
         return result;
     } else {
-        LOGE("Failed to start streams as recording (%p) and/or playback (%p) stream was null.",
-             &mRecordingStream, &mPlayStream);
-        closeAllStreams();
+        LOGE("Recording and/or Playback streams not created yet. Need to call prepareRecording() first.");
+        stopRecording();
         return oboe::Result::ErrorNull;
     }
 }
@@ -173,30 +134,58 @@ oboe::Result NativeAudioEngine::startAllStreams() {
 /**
  * Stops and closes the playback and recording streams.
  */
+void NativeAudioEngine::stopRecording() {
+    if(!mIsRecording) {
+        LOGW("Recording not in progress - ignoring this request");
+        return;
+    }
+
+    mFullDuplexPassthru.stop();
+    closeAllStreams();
+    mIsRecording = false;
+}
+
+
+oboe::Result NativeAudioEngine::openAllStreams() {
+    /**
+     * Note: The order of stream creation is important. We create the playback
+     * stream first, then use properties from the playback stream
+     * (e.g. sample rate) to create the recording stream. By matching the
+     * properties we should get the lowest latency path.
+     */
+    oboe::Result result = openPlaybackStream();
+    if (result != oboe::Result::OK) {
+        closeAllStreams();
+        return result;
+    }
+
+    result = openRecordingStream();
+    if (result != oboe::Result::OK) {
+        closeAllStreams();
+        return result;
+    }
+
+    return result;
+}
+
 void NativeAudioEngine::closeAllStreams() {
     /**
      * Note: The order of events is important here.
-     * The recording stream must be closed before the playback stream. If the
-     * playback stream were to be closed first, the recording stream's
-     * callback may attempt to write to the playback stream
-     * which would cause the app to crash since the playback stream would be
+     * The playback stream must be closed before the recording stream. If the
+     * recording stream were to be closed first the playback stream's
+     * callback may attempt to read from the recording stream
+     * which would cause the app to crash since the recording stream would be
      * null.
      */
-
     if (mRecordingStream != nullptr) {
         closeStream(mRecordingStream);
         mRecordingStream = nullptr;
     }
 
     if (mPlayStream != nullptr) {
-        closeStream(mPlayStream);  // Calling close will also stop the stream
+        closeStream(mPlayStream);
         mPlayStream = nullptr;
     }
-
-    // Below causes crash as there's still work being done
-    //if (mJavaVm != NULL) {
-    //    mJavaVm->DetachCurrentThread();
-    //}
 }
 
 /**
@@ -207,24 +196,21 @@ void NativeAudioEngine::closeAllStreams() {
  */
 oboe::Result NativeAudioEngine::openRecordingStream() {
     // To create a stream we use a stream builder. This allows us to specify all
-    // the parameters for the stream prior to opening it
+    // the parameters for the stream prior to opening it.
     oboe::AudioStreamBuilder builder;
 
     setupRecordingStreamParameters(&builder);
 
     // Now that the parameters are set up we can open the stream
     oboe::Result result = builder.openManagedStream(mRecordingStream);
-    if (result == oboe::Result::OK && mRecordingStream) {
-        mSampleRate = mRecordingStream->getSampleRate();
 
-        assert(mRecordingStream->getFormat() == oboe::AudioFormat::I16);
-        assert(mOutputChannelCount == mRecordingStream->getChannelCount());
-
-        // warnIfNotLowLatency(mRecordingStream);
-    } else {
+    if(result != oboe::Result::OK) {
         LOGE("Failed to create recording stream. Error: %s",
              oboe::convertToText(result));
+        return result;
     }
+
+    warnIfNotLowLatency(mRecordingStream);
     return result;
 }
 
@@ -235,21 +221,22 @@ oboe::Result NativeAudioEngine::openRecordingStream() {
  * will be used.
  */
 oboe::Result NativeAudioEngine::openPlaybackStream() {
+    // To create a stream we use a stream builder. This allows us to specify all
+    // the parameters for the stream prior to opening it.
     oboe::AudioStreamBuilder builder;
 
     setupPlaybackStreamParameters(&builder);
+
+    // Now that the parameters are set up we can open the stream
     oboe::Result result = builder.openManagedStream(mPlayStream);
-    if (result == oboe::Result::OK && mPlayStream) {
-        assert(mPlayStream->getChannelCount() == mInputChannelCount);
-        assert(mPlayStream->getSampleRate() == mSampleRate);
-        assert(mPlayStream->getFormat() == oboe::AudioFormat::I16);
 
-        // warnIfNotLowLatency(mPlayStream);
-
-    } else {
-        LOGE("Failed to create playback stream. Error: %s",
+    if(result != oboe::Result::OK) {
+        LOGE("Failed to create recording stream. Error: %s",
              oboe::convertToText(result));
+        return result;
     }
+
+    warnIfNotLowLatency(mPlayStream);
     return result;
 }
 
@@ -261,7 +248,7 @@ oboe::Result NativeAudioEngine::openPlaybackStream() {
  */
 oboe::AudioStreamBuilder *NativeAudioEngine::setupRecordingStreamParameters(
     oboe::AudioStreamBuilder *builder) {
-    builder->setCallback(this)
+    builder->setCallback(nullptr)
         ->setDeviceId(mRecordingDeviceId)
         ->setDirection(oboe::Direction::Input)
         ->setSampleRate(mSampleRate)
@@ -276,10 +263,9 @@ oboe::AudioStreamBuilder *NativeAudioEngine::setupRecordingStreamParameters(
  */
 oboe::AudioStreamBuilder *NativeAudioEngine::setupPlaybackStreamParameters(
     oboe::AudioStreamBuilder *builder) {
-    builder->setCallback(nullptr)
+    builder->setCallback(this)
         ->setDeviceId(mPlaybackDeviceId)
         ->setDirection(oboe::Direction::Output)
-        ->setSampleRate(mSampleRate)
         ->setChannelCount(mOutputChannelCount);
 
     return setupCommonStreamParameters(builder);
@@ -300,29 +286,6 @@ oboe::AudioStreamBuilder *NativeAudioEngine::setupCommonStreamParameters(
         ->setSharingMode(oboe::SharingMode::Shared)
         ->setPerformanceMode(oboe::PerformanceMode::None);
     return builder;
-}
-
-oboe::Result NativeAudioEngine::startStream(oboe::ManagedStream &stream) {
-    assert(stream);
-    if (stream) {
-        oboe::Result result = stream->requestStart();
-        if (result != oboe::Result::OK) {
-            LOGE("Error starting stream. %s", oboe::convertToText(result));
-        }
-        return result;
-    } else {
-        LOGE("Error starting stream as it's null.");
-        return oboe::Result::ErrorNull;
-    }
-}
-
-void NativeAudioEngine::stopStream(oboe::ManagedStream &stream) {
-    if (stream) {
-        oboe::Result result = stream->stop(0L);
-        if (result != oboe::Result::OK) {
-            LOGE("Error stopping stream. %s", oboe::convertToText(result));
-        }
-    }
 }
 
 /**
@@ -357,8 +320,8 @@ void NativeAudioEngine::warnIfNotLowLatency(oboe::ManagedStream &stream) {
 }
 
 /**
- * Handles recording stream's audio request. In this method, we simply block-write
- * to the playback stream for the required samples.
+ * Handles playback stream's audio request. In this sample, we simply block-read
+ * from the record stream for the required samples.
  *
  * @param oboeStream: the record stream that providing available samples
  * @param audioData:  the buffer containing audio samples from record stream
@@ -367,36 +330,7 @@ void NativeAudioEngine::warnIfNotLowLatency(oboe::ManagedStream &stream) {
  */
 oboe::DataCallbackResult NativeAudioEngine::onAudioReady(
         oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) {
-    int32_t framesWritten = 0;
-    int32_t bytesPerFrame = mRecordingStream->getChannelCount() *
-                            oboeStream->getBytesPerSample();
-    int32_t bytesProvided = numFrames * bytesPerFrame;
-
-    // skip writing audio to play stream if we're skipping local playback
-    if (!mSkipLocalPlayback) {
-        do {
-            oboe::ResultWithValue<int32_t> status =
-                    mPlayStream->write(audioData, numFrames, 0);
-            if (!status) {
-                LOGE("input stream read error: %s",
-                     oboe::convertToText(status.error()));
-                return oboe::DataCallbackResult::Stop;
-            }
-            framesWritten += status.value();
-        } while (numFrames > framesWritten);
-    }
-
-    // send to audio data to jni callback
-    if (bytesProvided > 0 && mJavaVm != NULL) {
-        JNIEnv* env;
-        mJavaVm->AttachCurrentThread(&env, NULL); // a NO-OP if already attached
-        jbyteArray buffer = env->NewByteArray(bytesProvided);
-        env->SetByteArrayRegion(buffer, 0, bytesProvided, (jbyte *)audioData);
-        env->CallVoidMethod(mAudioDataCallbackInstance, mAudioDataCallbackMethod, buffer);
-        env->DeleteLocalRef(buffer);
-    };
-
-    return oboe::DataCallbackResult::Continue;
+    return mFullDuplexPassthru.onAudioReady(oboeStream, audioData, numFrames);
 }
 
 /**
