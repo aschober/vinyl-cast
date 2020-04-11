@@ -8,6 +8,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -23,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.os.Process;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -137,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onStart");
         super.onStart();
         // bind to VinylCastService
-        bindService();
+        bindVinylCastService();
     }
 
     @Override
@@ -156,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         Log.d(TAG, "onStop");
         // Unbind from VinylCastService
-        unbindService();
+        unbindVinylCastService();
         super.onStop();
     }
 
@@ -231,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             case RECORD_REQUEST_CODE: {
                 if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "Permission has been denied by user");
-                    setStatus(getString(R.string.status_record_audio_denied));
+                    setStatus(getString(R.string.status_record_audio_denied), true);
                 } else {
                     Log.i(TAG, "Permission has been granted by user");
                     startRecordingButtonClicked();
@@ -248,18 +251,18 @@ public class MainActivity extends AppCompatActivity {
         f.show(fm, "androidx.mediarouter:MediaRouteChooserDialogFragment");
     }
 
-    private void bindService() {
+    private void bindVinylCastService() {
         if (!serviceBound) {
-            setStatus(getString(R.string.status_preparing));
+            setStatus(getString(R.string.status_preparing), true);
             Intent bindIntent = new Intent(MainActivity.this, VinylCastService.class);
-            bindService(bindIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            bindService(bindIntent, vinylCastServiceConnection, Context.BIND_AUTO_CREATE);
         }
     }
 
-    private void unbindService() {
+    private void unbindVinylCastService() {
         if (serviceBound) {
-            setStatus(getString(R.string.status_stopped));
-            unbindService(serviceConnection);
+            setStatus(getString(R.string.status_stopped), true);
+            unbindService(vinylCastServiceConnection);
             serviceBound = false;
         }
     }
@@ -321,8 +324,8 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Public helper to set the status message
      */
-    public void setStatus(String statusMessage) {
-        runOnUiThread(new UpdateStatusRunnable(statusMessage));
+    public void setStatus(String statusMessage, boolean clearStatus) {
+        runOnUiThread(new UpdateStatusRunnable(statusMessage, clearStatus));
     }
 
     /**
@@ -341,22 +344,100 @@ public class MainActivity extends AppCompatActivity {
 
     class UpdateStatusRunnable implements Runnable {
         String status;
+        boolean clearStatus;
 
-        UpdateStatusRunnable(String status) {
+        UpdateStatusRunnable(String status, boolean clearStatus) {
             this.status = status;
+            this.clearStatus = clearStatus;
         }
 
         @Override
         public void run() {
             statusText.setVisibility(View.VISIBLE);
-            statusText.setText(status);
+            if (clearStatus) {
+                statusText.setText(status);
+            } else {
+                statusText.setText(statusText.getText() + "\n" + status);
+            }
         }
     }
 
     /**
+     * Adds the provided album as a new row on the application display
+     */
+    private String currentTrack;
+    private String currentAlbum;
+    private String currentArtist;
+
+    public void updateMetadataFields(String trackTitle, String albumTitle, String artist, String coverArtUrl) {
+
+        currentTrack = trackTitle;
+        currentAlbum = albumTitle;
+        currentArtist = artist;
+
+        if (trackTitle == null) {
+            //coverArtImage.setVisibility(View.GONE);
+            //albumTextView.setVisibility(View.GONE);
+            //trackTextView.setVisibility(View.GONE);
+            // Use the artist text field to display the error message
+            //artistText.setText("Music Not Identified");
+        } else {
+            // populate the display tow with metadata and cover art
+            albumTextView.setText(albumTitle);
+            artistTextView.setText(artist);
+            trackTextView.setText(trackTitle);
+
+            binder.updateMediaSessionMetadata(trackTitle, albumTitle, artist, null);
+            binder.loadAndDisplayCoverArt(coverArtUrl, coverArtImage);
+        }
+    }
+
+    public void setCoverArt(Drawable coverArt, ImageView coverArtImage){
+        if (coverArt instanceof BitmapDrawable) {
+            binder.updateMediaSessionMetadata(currentTrack, currentAlbum, currentArtist, (BitmapDrawable) coverArt);
+        }
+        runOnUiThread(new SetCoverArtRunnable(coverArt, coverArtImage));
+    }
+
+    class SetCoverArtRunnable implements Runnable {
+
+        Drawable coverArt;
+        ImageView coverArtImage;
+
+        SetCoverArtRunnable(Drawable locCoverArt, ImageView locCoverArtImage) {
+            coverArt = locCoverArt;
+            coverArtImage = locCoverArtImage;
+        }
+
+        @Override
+        public void run() {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);
+            coverArtImage.setImageDrawable(coverArt);
+        }
+    }
+
+    /**
+     * Helper to clear the results from the application display
+     */
+    public void clearMetadata() {
+        runOnUiThread(new ClearMetadataRunnable());
+    }
+
+    class ClearMetadataRunnable implements Runnable {
+        @Override
+        public void run() {
+            albumTextView.setText("");
+            artistTextView.setText("");
+            trackTextView.setText("");
+            coverArtImage.setImageDrawable(null);
+        }
+    }
+
+
+    /**
      *  Defines callbacks for service binding, passed to bindService()
      */
-    private ServiceConnection serviceConnection = new ServiceConnection() {
+    private ServiceConnection vinylCastServiceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className,

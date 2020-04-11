@@ -3,6 +3,7 @@ package tech.schober.vinylcast.server;
 import android.content.Context;
 import android.os.Process;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.StringDef;
 
@@ -41,23 +42,26 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     public static final String CONTENT_TYPE_WAV = "audio/wav";
     public static final String CONTENT_TYPE_AAC = "audio/aac";
 
-    private static final int AUDIO_READ_BUFFER_SIZE = 1024;
-
+    private Context context;
     private String serverUrlPath;
     private int serverPort;
     private InputStream audioStream;
+    private int audioBufferSize;
+
     private List<HttpStreamServerListener> listeners;
-    private Context context;
 
     private String streamUrl;
     private String contentType;
     private HttpServerClients httpServerClients;
     private Thread readAudioThread;
 
-    public HttpStreamServerImpl(String serverUrlPath, int serverPort, @VinylCastService.AudioEncoding int audioEncoding, InputStream audioStream, Context context) {
+    public HttpStreamServerImpl(Context context, String serverUrlPath, int serverPort, @VinylCastService.AudioEncoding int audioEncoding, InputStream audioStream, int audioBufferSize) {
         super(serverPort);
+        this.context = context;
         this.serverUrlPath = serverUrlPath;
         this.serverPort = serverPort;
+        this.audioBufferSize = audioBufferSize;
+
         switch(audioEncoding) {
             case AUDIO_ENCODING_WAV:
                 this.contentType = CONTENT_TYPE_WAV;
@@ -67,7 +71,6 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                 break;
         }
         this.audioStream = audioStream;
-        this.context = context;
 
         this.listeners = Collections.synchronizedList(new ArrayList());
     }
@@ -79,7 +82,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         // Create fresh list of clients
         httpServerClients = new HttpServerClients();
 
-        // Create / start ReadAudioStream thread
+        // Create / start HttpReadAudioStream thread
         readAudioThread = new Thread(new HttpReadAudioStreamRunnable(), "HttpReadAudioStream");
         readAudioThread.start();
 
@@ -142,7 +145,9 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                 return newFixedLengthResponse(Response.Status.NO_CONTENT, contentType, "Stream not available.");
             }
 
-            return newChunkedResponse(Response.Status.OK, contentType, httpClient.inputStream);
+            Response response = newChunkedResponse(Response.Status.OK, contentType, httpClient.inputStream);
+            Log.d(TAG, "Sending HTTP Response: " + response);
+            return response;
         } else {
             return super.serve(session);
         }
@@ -154,9 +159,9 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         @Override
         public void run() {
             Log.d(TAG, "starting...");
-            Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
+            //Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
-            byte[] buffer = new byte[AUDIO_READ_BUFFER_SIZE];
+            byte[] buffer = new byte[audioBufferSize];
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     int bufferReadResult = audioStream.read(buffer, 0, buffer.length);
@@ -165,7 +170,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                             httpClient.outputStream.write(buffer, 0, bufferReadResult);
                             httpClient.outputStream.flush();
                         } catch (Exception e) {
-                            Log.e(TAG, "Exception writing to HttpClient. Removing client from list.", e);
+                            Log.w(TAG, "Exception writing to HttpClient. Removing client from list.", e);
                             httpServerClients.removeClient(httpClient);
                         }
                     }
@@ -175,7 +180,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                 }
             }
 
-            Log.d(TAG, "stopping...");
+            Log.d(TAG, "interrupted, calling HttpStreamServerImpl.stop()");
             stop();
         }
     }
@@ -188,9 +193,8 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         HttpClientImpl createHttpClient(String ipAddress, String hostname) {
             HttpClientImpl newClient;
             try {
-                PipedInputStream httpClientInputStream = new PipedInputStream(AUDIO_READ_BUFFER_SIZE);
-                PipedOutputStream httpClientOutputStream = new PipedOutputStream(httpClientInputStream);
-                newClient = new HttpClientImpl(ipAddress, hostname, httpClientInputStream, httpClientOutputStream);
+                Pair<OutputStream, InputStream> httpClientStreams = Helpers.getPipedAudioStreams(audioBufferSize);
+                newClient = new HttpClientImpl(ipAddress, hostname, httpClientStreams.first, httpClientStreams.second);
                 if (contentType.equals(CONTENT_TYPE_WAV)) {
                     writeWAVHeaders(newClient.outputStream);
                 }
@@ -222,10 +226,14 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         void removeAllClients() {
             for (HttpClientImpl httpClient : httpClients) {
                 httpServerClients.removeClient(httpClient);
+                for (HttpStreamServerListener listener : listeners) {
+                    listener.onClientDisconnected(httpClient);
+                }
             }
         }
 
         // HttpClients list should only be modified by HttpServerClients object so provide unmodifiable list
+        // Any removal from this list should use removeClient helper method above.
         List<HttpClientImpl> getHttpClients() {
             return Collections.unmodifiableList(this.httpClients);
         }
@@ -307,11 +315,11 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         protected OutputStream outputStream;
         protected InputStream inputStream;
 
-        public HttpClientImpl(String ipAddress, String hostname, InputStream inputStream, OutputStream outputStream) {
+        public HttpClientImpl(String ipAddress, String hostname, OutputStream outputStream, InputStream inputStream) {
             this.ipAddress = ipAddress;
             this.hostname = hostname;
-            this.inputStream = inputStream;
             this.outputStream = outputStream;
+            this.inputStream = inputStream;
         }
 
         public String getIpAddress() {

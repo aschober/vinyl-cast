@@ -31,14 +31,14 @@
 
 class NativeAudioEngine : public oboe::AudioStreamCallback {
    public:
-    NativeAudioEngine();
+    NativeAudioEngine(JNIEnv* env);
     ~NativeAudioEngine();
     void setRecordingDeviceId(int32_t deviceId);
     void setPlaybackDeviceId(int32_t deviceId);
 
-    oboe::Result prepareRecording();
-    oboe::Result startRecording();
-    void stopRecording();
+    oboe::Result prepareRecording(JNIEnv *env);
+    oboe::Result startRecording(JNIEnv *env);
+    void stopRecording(JNIEnv *env);
 
     /*
      * oboe::AudioStreamCallback interface implementation
@@ -49,14 +49,17 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
     bool setAudioApi(oboe::AudioApi);
-    bool isAAudioSupported(void);
+    bool isAAudioSupported();
 
     void setAudioDataListener(JNIEnv *env, jobject instance, jobject callback);
     int32_t getSampleRate();
     int32_t getChannelCount();
 
    private:
+    JavaVM* mJavaVm;
     FullDuplexPassthru mFullDuplexPassthru;
+    jobject mCallbackObject;
+
     bool mIsRecording = false;
     int32_t mRecordingDeviceId = oboe::kUnspecified;
     int32_t mPlaybackDeviceId = oboe::kUnspecified;

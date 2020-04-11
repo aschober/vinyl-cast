@@ -50,5 +50,5 @@ dependencies {
     // HTTP Server
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     // Apache Commons IO
-    implementation 'commons-io:commons-io:2.5'
+    implementation 'commons-io:commons-io:2.6'
 }

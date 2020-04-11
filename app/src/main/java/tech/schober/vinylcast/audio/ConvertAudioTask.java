@@ -7,8 +7,6 @@ import android.os.Process;
 import android.util.Log;
 import android.util.Pair;
 
-import tech.schober.vinylcast.utils.Helpers;
-
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -16,6 +14,8 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import tech.schober.vinylcast.utils.Helpers;
 
 /**
  * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.
@@ -37,19 +37,23 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
     private InputStream nativeAudioStream;
     private int sampleRate;
     private int channelCount;
-    private Pair<OutputStream, InputStream> convertedAudioStreams;
+    private OutputStream convertedAudioWriteStream;
+    private InputStream convertedAudioReadStream;
 
     /**
      * Create a ConvertAudioTask
-     * @param bufferSize
      * @param sampleRate
      * @param channelCount
+     * @param bufferSize
      */
-    public ConvertAudioTask(InputStream nativeAudioStream, int bufferSize, int sampleRate, int channelCount) throws IOException {
+    public ConvertAudioTask(InputStream nativeAudioStream, int sampleRate, int channelCount, int bufferSize) throws IOException {
+        Log.d(TAG, "ConvertAudioTask - sampleRate: " + sampleRate +", channel count: " + channelCount);
         this.nativeAudioStream = nativeAudioStream;
         this.sampleRate = sampleRate;
         this.channelCount = channelCount;
-        this.convertedAudioStreams = Helpers.getPipedAudioStreams(bufferSize);
+        Pair<OutputStream, InputStream> convertedAudioStreams = Helpers.getPipedAudioStreams(bufferSize);
+        this.convertedAudioWriteStream = convertedAudioStreams.first;
+        this.convertedAudioReadStream = convertedAudioStreams.second;
     }
 
     /**
@@ -91,8 +95,8 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
         addADTStoPacket(packet, outPacketSize);
         outBuf.get(packet, 7, outBitsSize);
 
-        convertedAudioStreams.first.write(packet, 0, outPacketSize);
-        convertedAudioStreams.first.flush();
+        convertedAudioWriteStream.write(packet, 0, outPacketSize);
+        convertedAudioWriteStream.flush();
 
         outBuf.clear();
         codec.releaseOutputBuffer(outputBufferId, false);
@@ -206,7 +210,7 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
 
         Log.d(TAG, "stopping...");
         try {
-            convertedAudioStreams.first.close();
+            convertedAudioWriteStream.close();
         } catch (IOException e) {
             Log.e(TAG, "Exception closing streams", e);
         }
@@ -214,6 +218,6 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
 
     @Override
     public InputStream getAudioInputStream() {
-        return convertedAudioStreams.second;
+        return convertedAudioReadStream;
     }
 }

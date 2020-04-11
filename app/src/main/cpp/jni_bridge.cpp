@@ -34,7 +34,7 @@ extern "C" {
     JNIEXPORT jboolean JNICALL
     Java_tech_schober_vinylcast_audio_NativeAudioEngine_create(JNIEnv *env, jclass) {
         if (engine == nullptr) {
-            engine = new NativeAudioEngine();
+            engine = new NativeAudioEngine(env);
         }
 
         return (engine != nullptr) ? JNI_TRUE : JNI_FALSE;
@@ -56,7 +56,7 @@ extern "C" {
             return;
         }
 
-        engine->prepareRecording();
+        engine->prepareRecording(env);
     }
 
     JNIEXPORT void JNICALL
@@ -68,7 +68,7 @@ extern "C" {
             return;
         }
 
-        engine->startRecording();
+        engine->startRecording(env);
     }
 
     JNIEXPORT void JNICALL
@@ -80,7 +80,7 @@ extern "C" {
             return;
         }
 
-        engine->stopRecording();
+        engine->stopRecording(env);
     }
 
     JNIEXPORT void JNICALL

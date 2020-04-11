@@ -20,15 +20,15 @@ import android.util.Pair;
 
 import androidx.media.session.MediaButtonReceiver;
 
-import tech.schober.vinylcast.MainActivity;
-import tech.schober.vinylcast.R;
-import tech.schober.vinylcast.VinylCastService;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+
+import tech.schober.vinylcast.MainActivity;
+import tech.schober.vinylcast.R;
+import tech.schober.vinylcast.VinylCastService;
 
 import static android.content.Context.WIFI_SERVICE;
 import static androidx.core.app.NotificationCompat.Action;
