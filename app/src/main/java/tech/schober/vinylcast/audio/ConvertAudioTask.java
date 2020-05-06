@@ -24,7 +24,7 @@ import tech.schober.vinylcast.utils.Helpers;
 public class ConvertAudioTask implements Runnable, AudioStreamProvider {
     private static final String TAG = "ConvertAudioTask";
 
-    private static final String CODEC_MIME_TYPE = "audio/mp4a-latm";
+    private static final String CODEC_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
     private static final int CODEC_BIT_RATE = 192000;
     private static final long CODEC_TIMEOUT = 10000;
     private static final boolean CODEC_VERBOSE = false;

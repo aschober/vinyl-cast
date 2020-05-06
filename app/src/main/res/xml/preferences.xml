@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto" >
+    <PreferenceCategory
+        app:key="@string/prefs_key_category_audio_devices"
+        app:title="@string/prefs_title_category_audio_devices"
+        app:iconSpaceReserved="false" >
+
+        <com.google.sample.audio_device.AudioDevicePreference
+            app:key="@string/prefs_key_recording_device_id"
+            app:title="@string/prefs_title_audio_recording_device"
+            app:iconSpaceReserved="false"
+            app:defaultValue="@string/prefs_default_recording_device_id"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.google.sample.audio_device.AudioDevicePreference
+            app:key="@string/prefs_key_local_playback_device_id"
+            app:title="@string/prefs_title_audio_local_playback_device"
+            app:iconSpaceReserved="false"
+            app:defaultValue="@string/prefs_default_local_playback_device_id"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="@string/prefs_key_category_audio_streaming"
+        app:title="@string/prefs_title_category_audio_streaming"
+        app:iconSpaceReserved="false" >
+
+        <ListPreference
+            app:key="@string/prefs_key_audio_encoding"
+            app:title="@string/prefs_title_audio_encoding"
+            app:defaultValue="@string/prefs_default_audio_encoding"
+            app:useSimpleSummaryProvider="true"
+            app:selectable="true"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/prefs_key_http_server"
+            app:title="@string/prefs_title_http_server"
+            app:summary="@string/prefs_default_summary_http_server"
+            app:selectable="false"
+            app:enableCopying="true"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/prefs_key_http_clients"
+            app:title="@string/prefs_title_http_clients"
+            app:summary="@string/prefs_default_summary_http_clients"
+            app:selectable="false"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="@string/prefs_key_category_about"
+        app:title="@string/prefs_title_category_about"
+        app:iconSpaceReserved="false" >
+
+        <Preference
+            app:key="@string/prefs_key_feedback"
+            app:summary="@string/prefs_summary_feedback"
+            app:title="@string/prefs_title_feedback"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/prefs_key_audio_api"
+            app:title="@string/prefs_title_audio_api"
+            app:summary="@string/prefs_default_summary_audio_api"
+            app:selectable="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/prefs_key_android_api_level"
+            app:title="@string/prefs_title_android_api_level"
+            app:summary="29"
+            app:selectable="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/prefs_key_app_version"
+            app:title="@string/prefs_title_app_version"
+            app:summary="1.0.0"
+            app:selectable="false"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

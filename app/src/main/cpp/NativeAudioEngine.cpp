@@ -103,6 +103,15 @@ int32_t NativeAudioEngine::getChannelCount() {
     }
 }
 
+int32_t NativeAudioEngine::getAudioApi() {
+    if (mRecordingStream && mPlayStream) {
+        return static_cast<int32_t>(mAudioApi);
+    } else {
+        LOGE("Recording and/or Playback streams not created yet. Need to call prepareRecording() first.");
+        return -1;
+    }
+}
+
 oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
     LOGD("prepareRecording");
     if (mIsRecording) {
@@ -130,6 +139,7 @@ oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
         return result;
     }
     warnIfNotLowLatency(mRecordingStream);
+    mAudioApi = mRecordingStream->getAudioApi();
 
     mFullDuplexPassthru.setInputStream(mRecordingStream.get());
     mFullDuplexPassthru.setOutputStream(mPlayStream.get());

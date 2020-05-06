@@ -6,7 +6,7 @@
     android:id="@+id/landscapeConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="tech.schober.vinylcast.MainActivity">
+    tools:context="tech.schober.vinylcast.ui.main.MainActivity">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/verticalGuideline"
@@ -19,14 +19,26 @@
         android:id="@+id/startRecordingContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/activity_horizontal_margin"
+        android:layout_marginStart="4dp"
         android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginEnd="@dimen/activity_horizontal_margin"
+        android:layout_marginEnd="4dp"
         android:layout_marginBottom="@dimen/activity_vertical_margin"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/verticalGuideline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+
+        <tech.schober.vinylcast.ui.main.BarGraphView
+            xmlns:custom="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/audio_visualizer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            custom:color="@color/colorSlateGrayTransparent"
+            custom:minValue="-112"
+            custom:maxValue="0"
+            custom:length="16" />
 
         <ImageButton
             android:id="@+id/startRecordingButton"
@@ -61,99 +73,6 @@
             app:srcCompat="@drawable/ic_media_play_dark" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/audioDeviceContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="40dp"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_landscape_vertical_margin"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/statusContainer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/verticalGuideline"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:id="@+id/recDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/recording_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/recording_devices_spinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/recDeviceLabel" />
-
-        <TextView
-            android:id="@+id/playDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/playback_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/recording_devices_spinner" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/playback_devices_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/playDeviceLabel" />
-
-        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/encodingSelectionGroup"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/playback_devices_spinner">
-
-            <TextView
-                android:id="@+id/encodingTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/stream_encoding"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonWav"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="@string/stream_encoding_wav"
-                android:textColor="@android:color/secondary_text_light" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonAac"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="@string/stream_encoding_aac"
-                android:textColor="@android:color/secondary_text_light" />
-        </RadioGroup>
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/right_barrier"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:barrierDirection="end"
-            app:constraint_referenced_ids="recording_devices_spinner, playback_devices_spinner" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
     <LinearLayout
         android:id="@+id/statusContainer"
         android:layout_width="0dp"
@@ -165,8 +84,7 @@
         android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@+id/metadataListing"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/verticalGuideline"
-        app:layout_constraintTop_toBottomOf="@+id/audioDeviceContainer">
+        app:layout_constraintStart_toStartOf="@+id/verticalGuideline">
 
         <TextView
             android:id="@+id/statusLabel"

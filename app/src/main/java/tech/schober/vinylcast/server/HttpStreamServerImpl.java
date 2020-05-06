@@ -29,8 +29,7 @@ import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
 import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 /**
- * HTTP Server handling sending InputStream of data to a client.
- * Currently only supports connecting to single HTTP client as only a single input stream.
+ * HTTP Server handling sending InputStream of data to connected clients.
  */
 
 public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer {
@@ -124,6 +123,11 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
 
     public String getContentType() {
         return this.contentType;
+    }
+
+    @Override
+    public int getClientCount() {
+        return httpServerClients.getHttpClients().size();
     }
 
     public void addServerListener(HttpStreamServerListener listener) {

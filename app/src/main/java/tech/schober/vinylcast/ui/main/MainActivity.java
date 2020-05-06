@@ -1,54 +1,52 @@
-package tech.schober.vinylcast;
+package tech.schober.vinylcast.ui.main;
 
 import android.Manifest;
-import android.app.ActivityManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioDeviceInfo;
-import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
-import android.os.Process;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.mediarouter.app.MediaRouteChooserDialogFragment;
 import androidx.mediarouter.app.MediaRouteDialogFactory;
+import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.cast.framework.CastContext;
-import com.google.sample.audio_device.AudioDeviceListEntry;
-import com.google.sample.audio_device.AudioDeviceSpinner;
-import tech.schober.vinylcast.audio.NativeAudioEngine;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import tech.schober.vinylcast.R;
+import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.audio.AudioVisualizer;
+import tech.schober.vinylcast.ui.VinylCastActivity;
+import tech.schober.vinylcast.ui.settings.SettingsActivity;
+
 import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
 import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends VinylCastActivity implements AudioVisualizer.AudioVisualizerListener {
     private static final String TAG = "MainActivity";
 
     private static final int RECORD_REQUEST_CODE = 1;
@@ -66,16 +64,14 @@ public class MainActivity extends AppCompatActivity {
     private ImageView startRecordingIndicator;
     private Animation recordingButtonAnimation;
 
-    private AudioDeviceSpinner recordingDeviceSpinner;
-    private AudioDeviceSpinner playbackDeviceSpinner;
+    private BarGraphView audioVisualizer;
 
-    private boolean serviceBound = false;
     private boolean isServiceRecording = false;
-    VinylCastService.VinylCastBinder binder = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         CastContext.getSharedInstance(this).getSessionManager();
@@ -102,29 +98,7 @@ public class MainActivity extends AppCompatActivity {
         recordingButtonAnimation.setInterpolator(new LinearInterpolator());
         recordingButtonAnimation.setRepeatCount(Animation.INFINITE);
 
-        recordingDeviceSpinner = findViewById(R.id.recording_devices_spinner);
-        recordingDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
-
-        playbackDeviceSpinner = findViewById(R.id.playback_devices_spinner);
-        playbackDeviceSpinner.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
-
-        ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonWav);
-        findViewById(R.id.encodingButtonWav).setOnClickListener(new RadioButton.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (((RadioButton) v).isChecked()) {
-                    binder.setAudioEncoding(AUDIO_ENCODING_WAV);
-                }
-            }
-        });
-        findViewById(R.id.encodingButtonAac).setOnClickListener(new RadioButton.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (((RadioButton) v).isChecked()) {
-                    binder.setAudioEncoding(AUDIO_ENCODING_AAC);
-                }
-            }
-        });
+        audioVisualizer = findViewById(R.id.audio_visualizer);
     }
 
     @Override
@@ -136,11 +110,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.menu_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
     protected void onStart() {
         Log.d(TAG, "onStart");
         super.onStart();
-        // bind to VinylCastService
-        bindVinylCastService();
     }
 
     @Override
@@ -158,9 +142,35 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop");
-        // Unbind from VinylCastService
-        unbindVinylCastService();
         super.onStop();
+    }
+
+    protected void bindVinylCastService() {
+        if (!isServiceBound()) {
+            setStatus(getString(R.string.status_preparing), true);
+        }
+        super.bindVinylCastService();
+    }
+
+    protected void unbindVinylCastService() {
+        if (isServiceBound()) {
+            setStatus(getString(R.string.status_stopped), true);
+        }
+        super.unbindVinylCastService();
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName className,
+                                   IBinder service) {
+        Log.d(TAG, "onServiceConnected");
+        super.onServiceConnected(className, service);
+        binder.setMainActivity(MainActivity.this);
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName className) {
+        Log.d(TAG, "onServiceDisconnected");
+        super.onServiceDisconnected(className);
     }
 
     private void startRecordingButtonClicked() {
@@ -180,26 +190,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // TODO: update check for built-in devices based on preferences
     private boolean hasBuiltInDevicesSelected(DialogInterface.OnClickListener positiveClickListener) {
-        final AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
-        final AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
-
-
-        if ((RECORDING_DEVICES_BUILTIN.contains(selectedRecordingDevice.getType())) && (PLAYBACK_DEVICES_BUILTIN.contains(selectedPlaybackDevice.getType()))) {
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.alert_builtin_warning_title)
-                    .setMessage(R.string.alert_builtin_warning_message)
-                    // Specifying a listener allows you to take an action before dismissing the dialog.
-                    // The dialog is automatically dismissed when a dialog button is clicked.
-                    .setPositiveButton(android.R.string.yes, positiveClickListener)
-                    // A null listener allows the button to dismiss the dialog and take no further action.
-                    .setNegativeButton(android.R.string.no, null)
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .show();
-            return true;
-        }
+//        final AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
+//        final AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
+//
+//
+//        if ((RECORDING_DEVICES_BUILTIN.contains(selectedRecordingDevice.getType())) && (PLAYBACK_DEVICES_BUILTIN.contains(selectedPlaybackDevice.getType()))) {
+//            new AlertDialog.Builder(this)
+//                    .setTitle(R.string.alert_builtin_warning_title)
+//                    .setMessage(R.string.alert_builtin_warning_message)
+//                    // Specifying a listener allows you to take an action before dismissing the dialog.
+//                    // The dialog is automatically dismissed when a dialog button is clicked.
+//                    .setPositiveButton(android.R.string.yes, positiveClickListener)
+//                    // A null listener allows the button to dismiss the dialog and take no further action.
+//                    .setNegativeButton(android.R.string.no, null)
+//                    .setIcon(android.R.drawable.ic_dialog_alert)
+//                    .show();
+//            return true;
+//        }
         return false;
     }
+
     private boolean hasRecordAudioPermission() {
         boolean hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
         Log.d(TAG, "Has RECORD_AUDIO permission? " + hasPermission);
@@ -251,28 +263,17 @@ public class MainActivity extends AppCompatActivity {
         f.show(fm, "androidx.mediarouter:MediaRouteChooserDialogFragment");
     }
 
-    private void bindVinylCastService() {
-        if (!serviceBound) {
-            setStatus(getString(R.string.status_preparing), true);
-            Intent bindIntent = new Intent(MainActivity.this, VinylCastService.class);
-            bindService(bindIntent, vinylCastServiceConnection, Context.BIND_AUTO_CREATE);
-        }
-    }
-
-    private void unbindVinylCastService() {
-        if (serviceBound) {
-            setStatus(getString(R.string.status_stopped), true);
-            unbindService(vinylCastServiceConnection);
-            serviceBound = false;
-        }
-    }
-
     private void startRecording() {
         if (!isServiceRecording) {
-            AudioDeviceListEntry selectedPlaybackDevice = (AudioDeviceListEntry)playbackDeviceSpinner.getSelectedItem();
-            NativeAudioEngine.setPlaybackDeviceId(selectedPlaybackDevice.getId());
-            AudioDeviceListEntry selectedRecordingDevice = (AudioDeviceListEntry)recordingDeviceSpinner.getSelectedItem();
-            NativeAudioEngine.setRecordingDeviceId(selectedRecordingDevice.getId());
+            // set audio encoding from preference
+            int audioEncodingPrefValue = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_audio_encoding), getString(R.string.prefs_default_audio_encoding)));
+            binder.setAudioEncoding(audioEncodingPrefValue);
+            // set playback device from preference
+            int selectedPlaybackDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_local_playback_device_id), getString(R.string.prefs_default_local_playback_device_id)));
+            binder.setPlaybackDeviceId(selectedPlaybackDeviceId);
+            // set recording device from preference
+            int selectedRecordingDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_recording_device_id), getString(R.string.prefs_default_recording_device_id)));
+            binder.setRecordingDeviceId(selectedRecordingDeviceId);
 
             Intent startIntent = new Intent(MainActivity.this, VinylCastService.class);
             startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
@@ -292,11 +293,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setSpinnersEnabled(boolean isEnabled){
-        recordingDeviceSpinner.setEnabled(isEnabled);
-        playbackDeviceSpinner.setEnabled(isEnabled);
-    }
-
     private void animateRecord(boolean animate) {
         if (animate) {
             startRecordingButton.startAnimation(recordingButtonAnimation);
@@ -313,11 +309,9 @@ public class MainActivity extends AppCompatActivity {
         if (isRecording) {
             startRecordingIndicator.setImageResource(R.drawable.ic_media_stop_dark);
             animateRecord(true);
-            setSpinnersEnabled(false);
         } else {
             startRecordingIndicator.setImageResource(R.drawable.ic_media_play_dark);
             animateRecord(false);
-            setSpinnersEnabled(true);
         }
     }
 
@@ -329,17 +323,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Public helper to set the encoding radio buttons
+     * Callback from AudioVisualizer with spectrum amplitude data
+     * @param spectrumAmpDB
      */
-    public void setEncoding(@VinylCastService.AudioEncoding int encoding) {
-        switch (encoding) {
-            case AUDIO_ENCODING_WAV:
-                ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonWav);
-                break;
-            case AUDIO_ENCODING_AAC:
-                ((RadioGroup) findViewById(R.id.encodingSelectionGroup)).check(R.id.encodingButtonAac);
-                break;
-        }
+    @Override
+    public void onAudioVisualizerData(double[] spectrumAmpDB) {
+        audioVisualizer.setData(spectrumAmpDB);
     }
 
     class UpdateStatusRunnable implements Runnable {
@@ -369,28 +358,28 @@ public class MainActivity extends AppCompatActivity {
     private String currentAlbum;
     private String currentArtist;
 
-    public void updateMetadataFields(String trackTitle, String albumTitle, String artist, String coverArtUrl) {
-
-        currentTrack = trackTitle;
-        currentAlbum = albumTitle;
-        currentArtist = artist;
-
-        if (trackTitle == null) {
-            //coverArtImage.setVisibility(View.GONE);
-            //albumTextView.setVisibility(View.GONE);
-            //trackTextView.setVisibility(View.GONE);
-            // Use the artist text field to display the error message
-            //artistText.setText("Music Not Identified");
-        } else {
-            // populate the display tow with metadata and cover art
-            albumTextView.setText(albumTitle);
-            artistTextView.setText(artist);
-            trackTextView.setText(trackTitle);
-
-            binder.updateMediaSessionMetadata(trackTitle, albumTitle, artist, null);
-            binder.loadAndDisplayCoverArt(coverArtUrl, coverArtImage);
-        }
-    }
+//    public void updateMetadataFields(String trackTitle, String albumTitle, String artist, String coverArtUrl) {
+//
+//        currentTrack = trackTitle;
+//        currentAlbum = albumTitle;
+//        currentArtist = artist;
+//
+//        if (trackTitle == null) {
+//            //coverArtImage.setVisibility(View.GONE);
+//            //albumTextView.setVisibility(View.GONE);
+//            //trackTextView.setVisibility(View.GONE);
+//            // Use the artist text field to display the error message
+//            //artistText.setText("Music Not Identified");
+//        } else {
+//            // populate the display tow with metadata and cover art
+//            albumTextView.setText(albumTitle);
+//            artistTextView.setText(artist);
+//            trackTextView.setText(trackTitle);
+//
+//            binder.updateMediaSessionMetadata(trackTitle, albumTitle, artist, null);
+//            binder.loadAndDisplayCoverArt(coverArtUrl, coverArtImage);
+//        }
+//    }
 
     public void setCoverArt(Drawable coverArt, ImageView coverArtImage){
         if (coverArt instanceof BitmapDrawable) {
@@ -411,7 +400,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);
             coverArtImage.setImageDrawable(coverArt);
         }
     }
@@ -434,40 +422,5 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    /**
-     *  Defines callbacks for service binding, passed to bindService()
-     */
-    private ServiceConnection vinylCastServiceConnection = new ServiceConnection() {
 
-        @Override
-        public void onServiceConnected(ComponentName className,
-                                       IBinder service) {
-            Log.d(TAG, "onServiceConnected");
-            // We've bound to VinylCastService, cast the IBinder and get VinylCastService instance
-            binder = (VinylCastService.VinylCastBinder) service;
-            serviceBound = true;
-            binder.setActivity(MainActivity.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            Log.d(TAG, "onServiceDisconnected");
-            binder = null;
-            serviceBound = false;
-        }
-    };
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-    	/* from http://stackoverflow.com/a/5921190
-    	 * used to check if BackgroundVideoRecorder Service is already running
-    	 * when user tries to log in.
-    	 */
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

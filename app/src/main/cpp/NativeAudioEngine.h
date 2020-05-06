@@ -54,6 +54,7 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void setAudioDataListener(JNIEnv *env, jobject instance, jobject callback);
     int32_t getSampleRate();
     int32_t getChannelCount();
+    int32_t getAudioApi();
 
    private:
     JavaVM* mJavaVm;
@@ -71,12 +72,6 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
 
     oboe::ManagedStream mRecordingStream;
     oboe::ManagedStream mPlayStream;
-
-    oboe::Result openAllStreams();
-    void closeAllStreams();
-
-    oboe::Result openRecordingStream();
-    oboe::Result openPlaybackStream();
 
     oboe::AudioStreamBuilder *setupCommonStreamParameters(
         oboe::AudioStreamBuilder *builder);

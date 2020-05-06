@@ -3,9 +3,13 @@ package tech.schober.vinylcast.audio;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.IntDef;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import tech.schober.vinylcast.utils.Helpers;
@@ -13,6 +17,12 @@ import tech.schober.vinylcast.utils.Helpers;
 public class AudioRecorder implements AudioStreamProvider {
 
     private static final String TAG = "AudioRecorder";
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({AUDIO_API_OPENSLES, AUDIO_API_AAUDIO})
+    public @interface AudioApi {}
+    public static final int AUDIO_API_OPENSLES = 1;
+    public static final int AUDIO_API_AAUDIO = 2;
 
     protected int bufferSize;
     private CopyOnWriteArrayList<OutputStream> nativeAudioWriteStreams = new CopyOnWriteArrayList<>();
@@ -79,11 +89,30 @@ public class AudioRecorder implements AudioStreamProvider {
         return audioStreams.second;
     }
 
-    public int getSampleRate() {
+    public static void setRecordingDeviceId(int recordingDeviceId) {
+        NativeAudioEngine.setRecordingDeviceId(recordingDeviceId);
+    }
+
+    public static void setPlaybackDeviceId(int playbackDeviceId) {
+        NativeAudioEngine.setPlaybackDeviceId(playbackDeviceId);
+    }
+
+    public static int getSampleRate() {
         return NativeAudioEngine.getSampleRate();
     }
 
-    public int getChannelCount() {
+    public static int getChannelCount() {
         return NativeAudioEngine.getChannelCount();
+    }
+
+    public static String getAudioApi() {
+        switch(NativeAudioEngine.getAudioApi()) {
+            case AUDIO_API_OPENSLES:
+                return "OpenSL ES";
+            case AUDIO_API_AAUDIO:
+                return "AAudio";
+            default:
+                return "[not recording]";
+        }
     }
 }

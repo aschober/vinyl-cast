@@ -5,16 +5,28 @@
     android:id="@+id/landscapeConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="tech.schober.vinylcast.MainActivity">
+    tools:context="tech.schober.vinylcast.ui.main.MainActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/audioDeviceContainer"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+        android:layout_above="@+id/statusContainer"
+        android:layout_marginLeft="4dp"
         android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
+        android:layout_marginRight="4dp"
         android:layout_marginBottom="@dimen/activity_vertical_margin">
+
+        <tech.schober.vinylcast.ui.main.BarGraphView
+            xmlns:custom="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/audio_visualizer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            custom:color="@color/colorSlateGrayTransparent"
+            custom:minValue="-112"
+            custom:maxValue="0"
+            custom:length="16" />
 
         <ImageButton
             android:id="@+id/startRecordingButton"
@@ -47,102 +59,6 @@
             app:layout_constraintWidth_default="percent"
             app:layout_constraintWidth_percent=".25"
             app:srcCompat="@drawable/ic_media_play_dark" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/audioDeviceContainer"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/statusContainer"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/recDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/recording_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/recording_devices_spinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintTop_toBottomOf="@+id/recDeviceLabel" />
-
-        <TextView
-            android:id="@+id/playDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:text="@string/playback_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/recording_devices_spinner" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/playback_devices_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintTop_toBottomOf="@+id/playDeviceLabel" />
-
-        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/encodingSelectionGroup"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/playback_devices_spinner">
-
-            <TextView
-                android:id="@+id/encodingTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:text="@string/stream_encoding" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonWav"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginLeft="16dp"
-                android:lines="1"
-                android:maxLines="1"
-                android:text="@string/stream_encoding_wav" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonAac"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:lines="1"
-                android:maxLines="1"
-                android:text="@string/stream_encoding_aac" />
-        </RadioGroup>
-
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/right_barrier"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:barrierDirection="end"
-            app:constraint_referenced_ids="recording_devices_spinner, playback_devices_spinner" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout

@@ -17,18 +17,17 @@ package com.google.sample.audio_device;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.content.res.Resources.Theme;
+import android.content.res.Resources;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.util.AttributeSet;
-import android.widget.Spinner;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-public class AudioDeviceSpinner extends Spinner {
+public class AudioDeviceSpinner extends androidx.appcompat.widget.AppCompatSpinner {
     private static final String TAG = AudioDeviceSpinner.class.getName();
 
     private static final int NONE_DEVICE_ID = -1;
@@ -39,39 +38,29 @@ public class AudioDeviceSpinner extends Spinner {
     private AudioDeviceAdapter mDeviceAdapter;
     private AudioManager mAudioManager;
 
-    public AudioDeviceSpinner(Context context){
-        super(context);
-        setup(context);
+    public AudioDeviceSpinner(Context context) {
+        this(context, null);
     }
 
-    public AudioDeviceSpinner(Context context, int mode){
-        super(context, mode);
-        setup(context);
+    public AudioDeviceSpinner(Context context, int mode) {
+        this(context, null, R.attr.spinnerStyle, mode);
     }
 
-    public AudioDeviceSpinner(Context context, AttributeSet attrs){
-        super(context, attrs);
-        setup(context);
+    public AudioDeviceSpinner(Context context, AttributeSet attrs) {
+        this(context, attrs, R.attr.spinnerStyle);
     }
 
-    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr){
-        super(context, attrs, defStyleAttr);
-        setup(context);
+    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr) {
+        this(context, attrs, defStyleAttr, -1);
     }
 
-    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr, int mode){
-        super(context, attrs, defStyleAttr, mode);
-        setup(context);
+    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr, int mode) {
+        this(context, attrs, defStyleAttr, mode, null);
     }
 
-    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr,
-                              int defStyleRes, int mode){
-        super(context, attrs, defStyleAttr, defStyleRes, mode);
-        setup(context);
-    }
-    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr,
-                              int defStyleRes, int mode, Theme popupTheme){
-        super(context, attrs, defStyleAttr, defStyleRes, mode, popupTheme);
+    public AudioDeviceSpinner(Context context, AttributeSet attrs, int defStyleAttr, int mode,
+                              Resources.Theme popupTheme) {
+        super(context, attrs, defStyleAttr, mode, popupTheme);
         setup(context);
     }
 

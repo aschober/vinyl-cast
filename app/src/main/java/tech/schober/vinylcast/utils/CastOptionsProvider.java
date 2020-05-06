@@ -9,7 +9,7 @@ import com.google.android.gms.cast.framework.SessionProvider;
 import com.google.android.gms.cast.framework.media.CastMediaOptions;
 import com.google.android.gms.cast.framework.media.MediaIntentReceiver;
 import com.google.android.gms.cast.framework.media.NotificationOptions;
-import tech.schober.vinylcast.MainActivity;
+import tech.schober.vinylcast.ui.main.MainActivity;
 
 import java.util.ArrayList;
 import java.util.List;

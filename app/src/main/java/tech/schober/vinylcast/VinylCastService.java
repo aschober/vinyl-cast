@@ -10,7 +10,6 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
-import android.widget.ImageView;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -34,9 +33,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
 import tech.schober.vinylcast.audio.AudioRecorder;
+import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.audio.ConvertAudioTask;
+import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerImpl;
+import tech.schober.vinylcast.ui.main.MainActivity;
 import tech.schober.vinylcast.utils.Helpers;
 
 public class VinylCastService extends MediaBrowserServiceCompat {
@@ -55,9 +57,11 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     public static final int AUDIO_ENCODING_AAC = 1;
 
     private static final int AUDIO_STREAM_BUFFER_SIZE = 8192;
+    private static final int AUDIO_VISUALIZER_FFT_LENGTH = 256;
+    private static final int AUDIO_VISUALIZER_FFT_BINS = 16;
 
     private final IBinder binder = new VinylCastBinder();
-    private MainActivity activity;
+    private MainActivity mainActivity;
 
     private AudioRecorder audioRecorder;
 
@@ -66,8 +70,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     private HttpStreamServer httpStreamServer;
 
-    private MediaSessionCompat mediaSession;
+    private AudioVisualizer audioVisualizer;
 
+    private MediaSessionCompat mediaSession;
     private SessionManager castSessionManager;
     private SessionManagerListener castSessionManagerListener;
 
@@ -77,17 +82,53 @@ public class VinylCastService extends MediaBrowserServiceCompat {
      */
     public class VinylCastBinder extends Binder {
 
-        public void setActivity(MainActivity activity) {
-            VinylCastService.this.activity = activity;
-            updateMainActivity();
+        public MainActivity getMainActivity() {
+            return VinylCastService.this.mainActivity;
         }
 
-        public MainActivity getActivity() {
-            return VinylCastService.this.activity;
+        public void setMainActivity(MainActivity activity) {
+            VinylCastService.this.mainActivity = activity;
+            updateMainActivity();
         }
 
         public void setAudioEncoding(@AudioEncoding int audioEncoding) {
             VinylCastService.this.audioEncoding = audioEncoding;
+        }
+
+        public void setRecordingDeviceId(int recordingDeviceId) {
+            AudioRecorder.setRecordingDeviceId(recordingDeviceId);
+        }
+
+        public void setPlaybackDeviceId(int playbackDeviceId) {
+            AudioRecorder.setPlaybackDeviceId(playbackDeviceId);
+        }
+
+        public InputStream getAudioInputStream() {
+            if (isRecording()) {
+                return audioRecorder.getAudioInputStream();
+            } else {
+                return null;
+            }
+        }
+
+        public int getSampleRate() {
+            return AudioRecorder.getSampleRate();
+        }
+
+        public int getChannelCount() {
+            return AudioRecorder.getChannelCount();
+        }
+
+        public String getAudioApi() {
+            return AudioRecorder.getAudioApi();
+        }
+
+        public int getAudioStreamBufferSize() {
+            return AUDIO_STREAM_BUFFER_SIZE;
+        }
+
+        public HttpStreamServer getHttpStreamServer() {
+            return httpStreamServer;
         }
 
         public void updateMediaSessionMetadata(String trackTitle, String artist, String album, BitmapDrawable albumImage) {
@@ -107,30 +148,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
             // currently, only way to update Cast metadata is to re-send URL which causes reload of stream
             //castMedia(trackTitle, artist, album, imageUrl);
-        }
-
-        public void loadAndDisplayCoverArt(String coverArtUrl, ImageView imageView) {
-            // TODO: implement
-        }
-
-        public InputStream getAudioInputStream() {
-            if (isRecording()) {
-                return audioRecorder.getAudioInputStream();
-            } else {
-                return null;
-            }
-        }
-
-        public int getSampleRate() {
-            return audioRecorder.getSampleRate();
-        }
-
-        public int getChannelCount() {
-            return audioRecorder.getChannelCount();
-        }
-
-        public int getAudioStreamBufferSize() {
-            return AUDIO_STREAM_BUFFER_SIZE;
         }
     }
 
@@ -156,10 +173,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         // Create a MediaSessionCompat
         mediaSession = new MediaSessionCompat(this, TAG);
-
-        // Enable callbacks from MediaButtons and TransportControls
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                        MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
         // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player
         PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
@@ -238,6 +251,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
 
         //startAudioRecognition();
+        startAudioVisualizer(audioRecorder.getAudioInputStream(), audioRecorder.getSampleRate(), AUDIO_VISUALIZER_FFT_LENGTH, AUDIO_VISUALIZER_FFT_BINS);
 
         // put service in the foreground, post notification
         Helpers.createStopNotification(mediaSession, VinylCastService.this, VinylCastService.class, NOTIFICATION_CHANNEL_ID, NOTIFICATION_ID);
@@ -249,6 +263,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     private void stop() {
         Log.i(TAG, "stop");
+        stopAudioVisualizer();
         stopAudioRecognition();
         stopHttpServer();
         stopAudioConversion();
@@ -262,7 +277,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         updateCastSession();
     }
 
-    private boolean isRecording() {
+    public boolean isRecording() {
         return audioRecorder != null;
     }
 
@@ -310,11 +325,24 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private void stopHttpServer() {
         if (httpStreamServer != null) {
             httpStreamServer.stop();
+            httpStreamServer = null;
+        }
+    }
+
+    private void startAudioVisualizer(final InputStream rawAudioInputStream, final int sampleRate, int fftLength, int fftBins) {
+        audioVisualizer = new AudioVisualizer(rawAudioInputStream, AUDIO_STREAM_BUFFER_SIZE, sampleRate, fftLength, fftBins);
+        audioVisualizer.setAudioVisualizerListener(mainActivity);
+        audioVisualizer.start();
+    }
+
+    private void stopAudioVisualizer() {
+        if (audioVisualizer != null) {
+            audioVisualizer.stop();
+            audioVisualizer = null;
         }
     }
 
     private void startAudioRecognition() {
-
         Intent startRecognitionIntent = new Intent();
         startRecognitionIntent.setClassName(this, "tech.schober.audioacr.AudioRecognitionService");
 
@@ -365,14 +393,13 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     }
 
     private void updateMainActivity() {
-        if (activity != null) {
-            activity.updateRecordingState(isRecording());
+        if (mainActivity != null) {
+            mainActivity.updateRecordingState(isRecording());
             if (isRecording()) {
-                activity.setStatus(getString(R.string.status_recording) + "\n" + httpStreamServer.getStreamUrl(), true);
+                mainActivity.setStatus(getString(R.string.status_recording) + "\n" + httpStreamServer.getStreamUrl(), true);
             } else {
-                activity.setStatus(getString(R.string.status_ready), true);
+                mainActivity.setStatus(getString(R.string.status_ready), true);
             }
-            activity.setEncoding(audioEncoding);
         }
     }
 

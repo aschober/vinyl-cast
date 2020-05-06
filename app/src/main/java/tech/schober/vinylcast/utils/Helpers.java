@@ -26,7 +26,7 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 
-import tech.schober.vinylcast.MainActivity;
+import tech.schober.vinylcast.ui.main.MainActivity;
 import tech.schober.vinylcast.R;
 import tech.schober.vinylcast.VinylCastService;
 

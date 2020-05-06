@@ -109,7 +109,7 @@ extern "C" {
     }
 
     JNIEXPORT jboolean JNICALL
-    Java_tech_schober_vinylcast_audio_NativeAudioEngine_setAPI(JNIEnv *env,jclass type, jint apiType) {
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_setAudioApi(JNIEnv *env,jclass type, jint apiType) {
         if (engine == nullptr) {
             LOGE(
                     "Engine is null, you must call createEngine "
@@ -176,5 +176,16 @@ extern "C" {
             return JNI_ERR;
         }
         return engine->getChannelCount();
+    }
+
+    JNIEXPORT jint JNICALL
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_getAudioApi(JNIEnv *env, jclass type) {
+        if (engine == nullptr) {
+            LOGE(
+                    "Engine is null, you must call createEngine "
+                    "before calling this method");
+            return JNI_ERR;
+        }
+        return engine->getAudioApi();
     }
 }

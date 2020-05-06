@@ -12,10 +12,11 @@ public enum NativeAudioEngine {
     // Native methods
     public static native boolean create();
     public static native boolean isAAudioSupported();
-    public static native boolean setAPI(int apiType);
+    public static native boolean setAudioApi(int apiType);
     public static native void setAudioDataListener(NativeAudioEngineListener listener);
     public static native int getSampleRate();
     public static native int getChannelCount();
+    public static native int getAudioApi();
     public static native void prepareRecording();
     public static native void startRecording();
     public static native void stopRecording();
