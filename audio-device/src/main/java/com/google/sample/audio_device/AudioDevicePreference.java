@@ -1,5 +1,6 @@
 package com.google.sample.audio_device;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.AudioDeviceCallback;
@@ -12,6 +13,7 @@ import android.widget.AdapterView;
 import android.widget.Spinner;
 
 import androidx.preference.ListPreference;
+import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceViewHolder;
 
 import java.util.Arrays;
@@ -73,7 +75,15 @@ public class AudioDevicePreference extends ListPreference {
 
     @Override
     protected void onClick() {
-        mSpinner.performClick();
+        // first check onPreferenceClick before continuing
+        if (getOnPreferenceClickListener() != null && getOnPreferenceClickListener().onPreferenceClick(this)) {
+            return;
+        }
+
+        // open spinner instead of a dialog
+        if (mSpinner != null) {
+            mSpinner.performClick();
+        }
     }
 
     protected AudioDeviceAdapter createAdapter(Context context) {

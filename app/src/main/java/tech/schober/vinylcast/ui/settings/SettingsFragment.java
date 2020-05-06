@@ -5,13 +5,11 @@ import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -30,6 +28,25 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
     private static final String TAG = "SettingsFragment";
 
     private VinylCastService.VinylCastBinder binder;
+
+    private Preference.OnPreferenceClickListener disabledPreferenceClickListener = new Preference.OnPreferenceClickListener() {
+        @Override
+        public boolean onPreferenceClick(Preference preference) {
+            boolean isRecording = (binder != null && binder.isRecording());
+            if (isRecording) {
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Recording In-Progress")
+                        .setMessage("You cannot change this setting while recording is in-progress.")
+                        // The dialog is automatically dismissed when a dialog button is clicked.
+                        .setPositiveButton(android.R.string.ok, null)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+                return true;
+            } else {
+                return false;
+            }
+        }
+    };
 
     @Override
     public void onStart() {
@@ -57,26 +74,21 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         AudioDevicePreference recordingDevicePref = findPreference(R.string.prefs_key_recording_device_id);
         AudioDevicePreference playbackDevicePref = findPreference(R.string.prefs_key_local_playback_device_id);
         ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
-        Preference audioApiPref = findPreference(R.string.prefs_key_audio_api);
         Preference androidApiLevelPref = findPreference(R.string.prefs_key_android_api_level);
         Preference appVersionPref = findPreference(R.string.prefs_key_app_version);
 
         if (recordingDevicePref != null) {
             recordingDevicePref.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
+            recordingDevicePref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (playbackDevicePref != null) {
             playbackDevicePref.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
+            playbackDevicePref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (audioEncodingPref != null) {
             audioEncodingPref.setEntries(R.array.prefs_audio_encoding_entries);
             audioEncodingPref.setEntryValues(R.array.prefs_audio_encoding_entry_values);
-        }
-        if (audioApiPref != null) {
-            if (binder == null) {
-                audioApiPref.setSummary(R.string.prefs_default_summary_audio_api);
-            } else {
-                audioApiPref.setSummary(binder.getAudioApi());
-            }
+            audioEncodingPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (androidApiLevelPref != null) {
             androidApiLevelPref.setSummaryProvider(new Preference.SummaryProvider<Preference>() {
@@ -94,19 +106,22 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
                 }
             });
         }
+
+        // set initial state of dynamic preferences
+        updateDynamicPreferences();
     }
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         Log.d(TAG, "onServiceConnected");
         this.binder = (VinylCastService.VinylCastBinder) service;
+
+        // update state of dynamic preferences now that we're bound
+        updateDynamicPreferences();
+
         HttpStreamServer httpStreamServer = binder.getHttpStreamServer();
-
-        // set initial state of http server preferences
-        sendUpdateDynamicPreferencesMessage();
-
+        // if httpStreamServer exists, add an http server listener to update preferences accordingly
         if (httpStreamServer != null) {
-            // if httpStreamServer exists, add an http server listener to update preferences accordingly
             httpStreamServer.addServerListener(httpStreamServerListener);
         }
     }
@@ -118,73 +133,61 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             binder.getHttpStreamServer().removeServerListener(httpStreamServerListener);
         }
         this.binder = null;
+
+        // update state of dynamic preferences now that we're bound
+        updateDynamicPreferences();
     }
 
     protected <T extends Preference> T findPreference(@StringRes int key_id) {
         return (T) findPreference(getString(key_id));
     }
 
-    private void sendUpdateDynamicPreferencesMessage() {
-        Message updateDynamicPrefsMessage = handler.obtainMessage(MSG_UPDATE_DYNAMIC_PREFS);
-        updateDynamicPrefsMessage.sendToTarget();
+    private void updateDynamicPreferences() {
+        getActivity().runOnUiThread(new UpdateDynamicPrefsRunnable());
     }
 
-    private final static int MSG_UPDATE_DYNAMIC_PREFS = 1;
-
-    // handler to update UI on main thread
-    private Handler handler = new Handler(Looper.getMainLooper()) {
+    class UpdateDynamicPrefsRunnable implements Runnable {
         @Override
-        public void handleMessage(Message inputMessage) {
+        public void run() {
+            // update audio and http server preferences on main thread
+            boolean isRecording = (binder != null && binder.isRecording());
 
-            switch (inputMessage.what) {
-                case MSG_UPDATE_DYNAMIC_PREFS:
-                    // update http server preferences on main thread
-                    HttpStreamServer httpStreamServer = binder.getHttpStreamServer();
+            Preference httpServerPref = findPreference(R.string.prefs_key_http_server);
+            Preference httpClientsPref = findPreference(R.string.prefs_key_http_clients);
+            Preference audioApiPref = findPreference(R.string.prefs_key_audio_api);
 
-                    final ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
-                    final Preference httpServerPref = findPreference(R.string.prefs_key_http_server);
-                    final Preference httpClientsPref = findPreference(R.string.prefs_key_http_clients);
-                    final Preference audioApiPref = findPreference(R.string.prefs_key_audio_api);
-
-                    if (httpStreamServer == null) {
-                        audioEncodingPref.setSelectable(true);
-                        httpServerPref.setSummary(R.string.prefs_default_summary_http_server);
-                        httpClientsPref.setSummary(R.string.prefs_default_summary_http_clients);
-                    } else {
-                        audioEncodingPref.setSelectable(false);
-                        httpServerPref.setSummary(binder.getHttpStreamServer().getStreamUrl());
-                        httpClientsPref.setSummary(Integer.toString(binder.getHttpStreamServer().getClientCount()));
-                    }
-
-                    audioApiPref.setSummary(binder.getAudioApi());
-                    break;
-                default:
-                    // Pass along other messages from the UI
-                    super.handleMessage(inputMessage);
+            if (!isRecording) {
+                httpServerPref.setSummary(R.string.prefs_default_summary_http_server);
+                httpClientsPref.setSummary(R.string.prefs_default_summary_http_clients);
+                audioApiPref.setSummary(R.string.prefs_default_summary_audio_api);
+            } else {
+                audioApiPref.setSummary(binder.getAudioApi());
+                httpServerPref.setSummary(binder.getHttpStreamServer().getStreamUrl());
+                httpClientsPref.setSummary(Integer.toString(binder.getHttpStreamServer().getClientCount()));
             }
         }
-    };
+    }
 
     // create http server listener to update state of http server preferences via Handler on main thread
     private HttpStreamServerListener httpStreamServerListener = new HttpStreamServerListener() {
         @Override
         public void onStarted() {
-            sendUpdateDynamicPreferencesMessage();
+            updateDynamicPreferences();
         }
 
         @Override
         public void onStopped() {
-            sendUpdateDynamicPreferencesMessage();
+            updateDynamicPreferences();
         }
 
         @Override
         public void onClientConnected(HttpClient client) {
-            sendUpdateDynamicPreferencesMessage();
+            updateDynamicPreferences();
         }
 
         @Override
         public void onClientDisconnected(HttpClient client) {
-            sendUpdateDynamicPreferencesMessage();
+            updateDynamicPreferences();
         }
     };
 }

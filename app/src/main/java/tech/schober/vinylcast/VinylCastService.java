@@ -81,6 +81,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
      * runs in the same process as its clients, we don't need to deal with IPC.
      */
     public class VinylCastBinder extends Binder {
+        public boolean isRecording() {
+            return VinylCastService.this.isRecording();
+        }
 
         public MainActivity getMainActivity() {
             return VinylCastService.this.mainActivity;
@@ -277,7 +280,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         updateCastSession();
     }
 
-    public boolean isRecording() {
+    private boolean isRecording() {
         return audioRecorder != null;
     }
 

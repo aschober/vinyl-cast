@@ -26,12 +26,11 @@
         app:title="@string/prefs_title_category_audio_streaming"
         app:iconSpaceReserved="false" >
 
-        <ListPreference
+        <tech.schober.vinylcast.ui.settings.CheckOnClickListPreference
             app:key="@string/prefs_key_audio_encoding"
             app:title="@string/prefs_title_audio_encoding"
             app:defaultValue="@string/prefs_default_audio_encoding"
             app:useSimpleSummaryProvider="true"
-            app:selectable="true"
             app:iconSpaceReserved="false" />
 
         <Preference
