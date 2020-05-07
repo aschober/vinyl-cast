@@ -24,6 +24,9 @@ public class AudioRecorder implements AudioStreamProvider {
     public static final int AUDIO_API_OPENSLES = 1;
     public static final int AUDIO_API_AAUDIO = 2;
 
+    public static final int AUDIO_DEVICE_ID_NONE = -1;
+    public static final int AUDIO_DEVICE_ID_AUTO_SELECT = 0;
+
     protected int bufferSize;
     private CopyOnWriteArrayList<OutputStream> nativeAudioWriteStreams = new CopyOnWriteArrayList<>();
 

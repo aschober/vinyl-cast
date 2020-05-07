@@ -31,7 +31,10 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.settings.SettingsActivity"></activity>
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:label="Settings">
+        </activity>
 
         <service
             android:name=".VinylCastService"

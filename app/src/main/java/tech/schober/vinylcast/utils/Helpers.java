@@ -19,6 +19,7 @@ import android.text.format.Formatter;
 import android.util.Pair;
 
 import androidx.media.session.MediaButtonReceiver;
+import androidx.preference.PreferenceManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +82,7 @@ public class Helpers {
                         .setShowCancelButton(true)
                         .setCancelButtonIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context,
                                 PlaybackStateCompat.ACTION_STOP)))
-                .setSmallIcon(R.drawable.ic_album_black_24dp)
+                .setSmallIcon(R.drawable.ic_record_black_100dp)
                 .setVisibility(VISIBILITY_PUBLIC)
                 .build();
 
@@ -103,6 +104,10 @@ public class Helpers {
     public static String getIpAddress(Context context) {
         WifiManager wm = (WifiManager) context.getSystemService(WIFI_SERVICE);
         return Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+    }
+
+    public static int getSharedPreferenceStringAsInteger(Context context, int prefsKeyResId, int prefsDefaultResId) {
+        return Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(prefsKeyResId), context.getString(prefsDefaultResId)));
     }
 
     /**

@@ -19,7 +19,6 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -28,7 +27,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.mediarouter.app.MediaRouteChooserDialogFragment;
 import androidx.mediarouter.app.MediaRouteDialogFactory;
-import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.cast.framework.CastContext;
@@ -42,9 +40,6 @@ import tech.schober.vinylcast.VinylCastService;
 import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.ui.VinylCastActivity;
 import tech.schober.vinylcast.ui.settings.SettingsActivity;
-
-import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
-import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
 
 public class MainActivity extends VinylCastActivity implements AudioVisualizer.AudioVisualizerListener {
     private static final String TAG = "MainActivity";
