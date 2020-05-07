@@ -265,16 +265,6 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
 
     private void startRecording() {
         if (!isServiceRecording) {
-            // set audio encoding from preference
-            int audioEncodingPrefValue = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_audio_encoding), getString(R.string.prefs_default_audio_encoding)));
-            binder.setAudioEncoding(audioEncodingPrefValue);
-            // set playback device from preference
-            int selectedPlaybackDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_local_playback_device_id), getString(R.string.prefs_default_local_playback_device_id)));
-            binder.setPlaybackDeviceId(selectedPlaybackDeviceId);
-            // set recording device from preference
-            int selectedRecordingDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_recording_device_id), getString(R.string.prefs_default_recording_device_id)));
-            binder.setRecordingDeviceId(selectedRecordingDeviceId);
-
             Intent startIntent = new Intent(MainActivity.this, VinylCastService.class);
             startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
             MainActivity.this.startService(startIntent);

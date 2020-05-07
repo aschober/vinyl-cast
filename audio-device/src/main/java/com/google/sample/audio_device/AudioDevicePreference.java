@@ -1,6 +1,5 @@
 package com.google.sample.audio_device;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.AudioDeviceCallback;
@@ -13,7 +12,6 @@ import android.widget.AdapterView;
 import android.widget.Spinner;
 
 import androidx.preference.ListPreference;
-import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceViewHolder;
 
 import java.util.Arrays;
@@ -155,8 +153,10 @@ public class AudioDevicePreference extends ListPreference {
                 if (deviceList.size() > 0){
                     mDeviceAdapter.addAll(deviceList);
                 }
-
-                updateEntries();
+                for (AudioDeviceListEntry entry : deviceList) {
+                    Log.d(TAG, "audio device added: [" + entry.getId() + "] " + entry.getName());
+                }
+                updatePreferenceEntries();
             }
 
             public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
@@ -164,22 +164,21 @@ public class AudioDevicePreference extends ListPreference {
                 List<AudioDeviceListEntry> deviceList =
                         AudioDeviceListEntry.createListFrom(removedDevices, mDirectionType);
                 for (AudioDeviceListEntry entry : deviceList){
+                    Log.d(TAG, "audio device removed: [" + entry.getId() + "] " + entry.getName());
                     mDeviceAdapter.remove(entry);
                 }
-
-                updateEntries();
+                updatePreferenceEntries();
             }
         }, null);
     }
 
-    private void updateEntries() {
+    private void updatePreferenceEntries() {
         CharSequence[] entries = new CharSequence[mDeviceAdapter.getCount()];
         CharSequence[] entryValues = new CharSequence[mDeviceAdapter.getCount()];
         for (int i = 0; i < mDeviceAdapter.getCount(); i++) {
             mDeviceAdapter.getItem(0);
             entries[i] = mDeviceAdapter.getItem(i).getName();
-            entryValues[i] = Long.toString(mDeviceAdapter.getItemId(i));
-            Log.d(TAG, "audio device: [" + entryValues[i] + "] " + entries[i]);
+            entryValues[i] = Integer.toString(mDeviceAdapter.getItem(i).getId());
         }
         setEntries(entries);
         setEntryValues(entryValues);

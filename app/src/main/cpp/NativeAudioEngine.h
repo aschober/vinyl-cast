@@ -36,9 +36,9 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void setRecordingDeviceId(int32_t deviceId);
     void setPlaybackDeviceId(int32_t deviceId);
 
-    oboe::Result prepareRecording(JNIEnv *env);
-    oboe::Result startRecording(JNIEnv *env);
-    void stopRecording(JNIEnv *env);
+    bool prepareRecording(JNIEnv *env);
+    bool startRecording(JNIEnv *env);
+    bool stopRecording(JNIEnv *env);
 
     /*
      * oboe::AudioStreamCallback interface implementation
@@ -49,12 +49,14 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
     bool setAudioApi(oboe::AudioApi);
-    bool isAAudioSupported();
+    bool setLowLatency(bool lowLatency);
+    bool isAAudioSupportedAndRecommended();
 
     void setAudioDataListener(JNIEnv *env, jobject instance, jobject callback);
     int32_t getSampleRate();
     int32_t getChannelCount();
     int32_t getAudioApi();
+    const char * getOboeVersion();
 
    private:
     JavaVM* mJavaVm;
@@ -69,6 +71,7 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     int32_t mInputChannelCount = oboe::ChannelCount::Stereo;
     int32_t mOutputChannelCount = oboe::ChannelCount::Stereo;
     oboe::AudioApi mAudioApi = oboe::AudioApi::AAudio;
+    bool mLowLatency = false;
 
     oboe::ManagedStream mRecordingStream;
     oboe::ManagedStream mPlayStream;

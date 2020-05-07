@@ -10,6 +10,7 @@ import android.util.Log;
 
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
+import androidx.preference.CheckBoxPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -19,6 +20,7 @@ import com.google.sample.audio_device.AudioDevicePreference;
 import tech.schober.vinylcast.BuildConfig;
 import tech.schober.vinylcast.R;
 import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpClient;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerListener;
@@ -73,7 +75,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
         AudioDevicePreference recordingDevicePref = findPreference(R.string.prefs_key_recording_device_id);
         AudioDevicePreference playbackDevicePref = findPreference(R.string.prefs_key_local_playback_device_id);
+        CheckBoxPreference lowLatencyPref = findPreference(R.string.prefs_key_low_latency);
         ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
+        Preference feedbackPref = findPreference(R.string.prefs_key_feedback);
         Preference androidApiLevelPref = findPreference(R.string.prefs_key_android_api_level);
         Preference appVersionPref = findPreference(R.string.prefs_key_app_version);
 
@@ -84,6 +88,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         if (playbackDevicePref != null) {
             playbackDevicePref.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
             playbackDevicePref.setOnPreferenceClickListener(disabledPreferenceClickListener);
+        }
+        if (lowLatencyPref != null) {
+            lowLatencyPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (audioEncodingPref != null) {
             audioEncodingPref.setEntries(R.array.prefs_audio_encoding_entries);
@@ -159,9 +166,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             if (!isRecording) {
                 httpServerPref.setSummary(R.string.prefs_default_summary_http_server);
                 httpClientsPref.setSummary(R.string.prefs_default_summary_http_clients);
-                audioApiPref.setSummary(R.string.prefs_default_summary_audio_api);
+                audioApiPref.setSummary(getAudioApiVersionString());
             } else {
-                audioApiPref.setSummary(binder.getAudioApi());
+                audioApiPref.setSummary(getAudioApiVersionString());
                 httpServerPref.setSummary(binder.getHttpStreamServer().getStreamUrl());
                 httpClientsPref.setSummary(Integer.toString(binder.getHttpStreamServer().getClientCount()));
             }
@@ -190,5 +197,14 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             updateDynamicPreferences();
         }
     };
+
+    private String getAudioApiVersionString() {
+        if (binder != null && binder.isRecording()) {
+            return "Oboe " + NativeAudioEngine.getOboeVersion() + ": " + binder.getAudioApi();
+        } else {
+            boolean isAAudio = NativeAudioEngine.isAAudioSupportedAndRecommended();
+            return "Oboe " + NativeAudioEngine.getOboeVersion() + ": " + (isAAudio ? "AAudio" : "OpenSL ES");
+        }
+    }
 }
 

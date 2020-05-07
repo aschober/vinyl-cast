@@ -27,20 +27,28 @@ public class AudioRecorder implements AudioStreamProvider {
     protected int bufferSize;
     private CopyOnWriteArrayList<OutputStream> nativeAudioWriteStreams = new CopyOnWriteArrayList<>();
 
-    public AudioRecorder(int bufferSize) {
+    public AudioRecorder(int recordingDeviceId, int playbackDeviceId, boolean lowLatency, int bufferSize) {
+        NativeAudioEngine.setRecordingDeviceId(recordingDeviceId);
+        NativeAudioEngine.setPlaybackDeviceId(playbackDeviceId);
+        NativeAudioEngine.setLowLatency(lowLatency);
         this.bufferSize = bufferSize;
-
-        NativeAudioEngine.prepareRecording();
-        Log.d(TAG, "Prepared to Record - sampleRate: " + NativeAudioEngine.getSampleRate() +", channel count: " + NativeAudioEngine.getChannelCount());
     }
 
-    public void start() {
+    public boolean start() {
         Log.d(TAG, "start");
+
+        boolean preparedSuccess = NativeAudioEngine.prepareRecording();
+        if (!preparedSuccess) {
+            Log.w(TAG, "Failed to Prepare to Record.");
+            return false;
+        }
+        Log.d(TAG, "Prepared to Record - sampleRate: " + NativeAudioEngine.getSampleRate() +", channel count: " + NativeAudioEngine.getChannelCount());
 
         // callback from NativeAudioEngine with audioData will end up on own thread
         NativeAudioEngine.setAudioDataListener(new NativeAudioEngineListener() {
             @Override
             public void onAudioData(byte[] audioData) {
+                //Log.v(TAG, "audioData.length: " + audioData.length);
                 for (OutputStream writeStream : nativeAudioWriteStreams) {
                     try {
                         writeStream.write(audioData);
@@ -57,10 +65,10 @@ public class AudioRecorder implements AudioStreamProvider {
             }
         });
 
-        NativeAudioEngine.startRecording();
+        return NativeAudioEngine.startRecording();
     }
 
-    public void stop() {
+    public boolean stop() {
         Log.d(TAG, "stop");
 
         try {
@@ -72,7 +80,7 @@ public class AudioRecorder implements AudioStreamProvider {
             Log.e(TAG, "Exception closing streams", e);
         }
 
-        NativeAudioEngine.stopRecording();
+        return NativeAudioEngine.stopRecording();
     }
 
     @Override
@@ -87,14 +95,6 @@ public class AudioRecorder implements AudioStreamProvider {
         }
         nativeAudioWriteStreams.add(audioStreams.first);
         return audioStreams.second;
-    }
-
-    public static void setRecordingDeviceId(int recordingDeviceId) {
-        NativeAudioEngine.setRecordingDeviceId(recordingDeviceId);
-    }
-
-    public static void setPlaybackDeviceId(int playbackDeviceId) {
-        NativeAudioEngine.setPlaybackDeviceId(playbackDeviceId);
     }
 
     public static int getSampleRate() {

@@ -7,17 +7,24 @@
 
         <com.google.sample.audio_device.AudioDevicePreference
             app:key="@string/prefs_key_recording_device_id"
-            app:title="@string/prefs_title_audio_recording_device"
+            app:title="@string/prefs_title_recording_device"
             app:iconSpaceReserved="false"
             app:defaultValue="@string/prefs_default_recording_device_id"
             app:useSimpleSummaryProvider="true" />
 
         <com.google.sample.audio_device.AudioDevicePreference
             app:key="@string/prefs_key_local_playback_device_id"
-            app:title="@string/prefs_title_audio_local_playback_device"
+            app:title="@string/prefs_title_local_playback_device"
             app:iconSpaceReserved="false"
             app:defaultValue="@string/prefs_default_local_playback_device_id"
             app:useSimpleSummaryProvider="true" />
+
+        <CheckBoxPreference
+            app:key="@string/prefs_key_low_latency"
+            app:title="@string/prefs_title_low_latency"
+            app:summary="@string/prefs_summary_low_latency"
+            app:iconSpaceReserved="false"
+            app:defaultValue="@string/prefs_default_low_latency" />
 
     </PreferenceCategory>
 

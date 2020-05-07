@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
+import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaLoadRequestData;
@@ -66,7 +67,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private AudioRecorder audioRecorder;
 
     private Thread convertAudioThread;
-    private @AudioEncoding int audioEncoding = AUDIO_ENCODING_WAV;
 
     private HttpStreamServer httpStreamServer;
 
@@ -92,18 +92,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         public void setMainActivity(MainActivity activity) {
             VinylCastService.this.mainActivity = activity;
             updateMainActivity();
-        }
-
-        public void setAudioEncoding(@AudioEncoding int audioEncoding) {
-            VinylCastService.this.audioEncoding = audioEncoding;
-        }
-
-        public void setRecordingDeviceId(int recordingDeviceId) {
-            AudioRecorder.setRecordingDeviceId(recordingDeviceId);
-        }
-
-        public void setPlaybackDeviceId(int playbackDeviceId) {
-            AudioRecorder.setPlaybackDeviceId(playbackDeviceId);
         }
 
         public InputStream getAudioInputStream() {
@@ -244,7 +232,19 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     private void start() {
         Log.i(TAG, "start");
-        startAudioRecord();
+
+        // fetch audio record settings values out of SharedPreferences
+        int recordingDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_recording_device_id), getString(R.string.prefs_default_recording_device_id)));
+        int playbackDeviceId = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_local_playback_device_id), getString(R.string.prefs_default_local_playback_device_id)));
+        @AudioEncoding int audioEncoding = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences (this).getString(getString(R.string.prefs_key_audio_encoding), getString(R.string.prefs_default_audio_encoding)));
+        boolean lowLatency = PreferenceManager.getDefaultSharedPreferences (this).getBoolean(getString(R.string.prefs_key_low_latency), Boolean.valueOf(getString(R.string.prefs_default_low_latency)));
+
+        boolean success = startAudioRecord(recordingDeviceId, playbackDeviceId, lowLatency);
+        if (!success) {
+            Log.e(TAG, "Failed to start AudioRecord. Stopping VinylCastService...");
+            stop();
+            return;
+        }
 
         if (audioEncoding == AUDIO_ENCODING_AAC) {
             InputStream convertedAudioInputStream = startAudioConversion(audioRecorder.getAudioInputStream(), audioRecorder.getSampleRate(), audioRecorder.getChannelCount(), AUDIO_STREAM_BUFFER_SIZE);
@@ -284,14 +284,15 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         return audioRecorder != null;
     }
 
-    private void startAudioRecord() {
-        audioRecorder = new AudioRecorder(AUDIO_STREAM_BUFFER_SIZE);
-        audioRecorder.start();
+    private boolean startAudioRecord(int recordingDeviceId, int playbackDeviceId, boolean lowLatency) {
+        audioRecorder = new AudioRecorder(recordingDeviceId, playbackDeviceId, lowLatency, AUDIO_STREAM_BUFFER_SIZE);
+        return audioRecorder.start();
     }
 
-    private void stopAudioRecord() {
-        audioRecorder.stop();
+    private boolean stopAudioRecord() {
+        boolean success = audioRecorder.stop();
         audioRecorder = null;
+        return success;
     }
 
     private InputStream startAudioConversion(InputStream rawAudioInputStream, int convertedSampleRate, int convertedChannelCount, int audioBufferSize) {

@@ -51,9 +51,9 @@ void NativeAudioEngine::setPlaybackDeviceId(int32_t deviceId) {
     mPlaybackDeviceId = deviceId;
 }
 
-bool NativeAudioEngine::isAAudioSupported() {
+bool NativeAudioEngine::isAAudioSupportedAndRecommended() {
     oboe::AudioStreamBuilder builder;
-    return builder.isAAudioSupported();
+    return (builder.isAAudioSupported() && builder.isAAudioRecommended());
 }
 
 bool NativeAudioEngine::setAudioApi(oboe::AudioApi api) {
@@ -63,6 +63,16 @@ bool NativeAudioEngine::setAudioApi(oboe::AudioApi api) {
     }
 
     mAudioApi = api;
+    return true;
+}
+
+bool NativeAudioEngine::setLowLatency(bool lowLatency) {
+    if (mIsRecording) {
+        LOGW("Recording already in progress - ignoring this setLowLatency request");
+        return false;
+    }
+
+    mLowLatency = lowLatency;
     return true;
 }
 
@@ -112,11 +122,15 @@ int32_t NativeAudioEngine::getAudioApi() {
     }
 }
 
-oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
+const char * NativeAudioEngine::getOboeVersion() {
+    return oboe::Version::Text;
+}
+
+bool NativeAudioEngine::prepareRecording(JNIEnv *env) {
     LOGD("prepareRecording");
     if (mIsRecording) {
         LOGW("Recording already in progress - ignoring this prepareRecording request");
-        return oboe::Result::OK;
+        return false;
     }
 
     // Note: The order of stream creation is important. We create the playback
@@ -127,7 +141,7 @@ oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
     setupPlaybackStreamParameters(&outBuilder);
     oboe::Result result = outBuilder.openManagedStream(mPlayStream);
     if (result != oboe::Result::OK) {
-        return result;
+        return false;
     }
     warnIfNotLowLatency(mPlayStream);
     mSampleRate = mPlayStream->getSampleRate();
@@ -136,7 +150,7 @@ oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
     result = inBuilder.openManagedStream(mRecordingStream);
     if (result != oboe::Result::OK) {
         closeStream(mPlayStream);
-        return result;
+        return false;
     }
     warnIfNotLowLatency(mRecordingStream);
     mAudioApi = mRecordingStream->getAudioApi();
@@ -144,29 +158,29 @@ oboe::Result NativeAudioEngine::prepareRecording(JNIEnv *env) {
     mFullDuplexPassthru.setInputStream(mRecordingStream.get());
     mFullDuplexPassthru.setOutputStream(mPlayStream.get());
 
-    return result;
+    return true;
 }
 
-oboe::Result NativeAudioEngine::startRecording(JNIEnv *env) {
+bool NativeAudioEngine::startRecording(JNIEnv *env) {
     if (mIsRecording) {
         LOGW("Recording already in progress - ignoring this startRecording request");
-        return oboe::Result::OK;
+        return false;
     }
 
     if (mRecordingStream && mPlayStream) {
         mIsRecording = true;
         oboe::Result result = mFullDuplexPassthru.start();
-        return result;
+        return (result == oboe::Result::OK);
     } else {
         LOGE("Recording and/or Playback streams not created yet. Need to call prepareRecording() first.");
-        return oboe::Result::ErrorNull;
+        return false;
     }
 }
 
 /**
  * Stops and closes the playback and recording streams.
  */
-void NativeAudioEngine::stopRecording(JNIEnv *env) {
+bool NativeAudioEngine::stopRecording(JNIEnv *env) {
     if(!mIsRecording) {
         LOGW("Recording not in progress, but going to try stopping anyway.");
     }
@@ -199,6 +213,7 @@ void NativeAudioEngine::stopRecording(JNIEnv *env) {
     }
 
     mIsRecording = false;
+    return true;
 }
 
 /**
@@ -243,9 +258,16 @@ oboe::AudioStreamBuilder *NativeAudioEngine::setupCommonStreamParameters(
     // If EXCLUSIVE mode isn't available the builder will fall back to SHARED
     // mode.
     builder->setAudioApi(mAudioApi)
-        ->setFormat(mFormat)
-        ->setSharingMode(oboe::SharingMode::Exclusive)
-        ->setPerformanceMode(oboe::PerformanceMode::LowLatency);
+           ->setFormat(mFormat);
+
+    if (mLowLatency) {
+        builder->setSharingMode(oboe::SharingMode::Exclusive)
+               ->setPerformanceMode(oboe::PerformanceMode::LowLatency);
+    } else {
+        builder->setSharingMode(oboe::SharingMode::Shared)
+               ->setPerformanceMode(oboe::PerformanceMode::None);
+    }
+
     return builder;
 }
 

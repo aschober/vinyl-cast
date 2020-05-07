@@ -46,41 +46,41 @@ extern "C" {
         engine = nullptr;
     }
 
-    JNIEXPORT void JNICALL
+    JNIEXPORT jboolean JNICALL
     Java_tech_schober_vinylcast_audio_NativeAudioEngine_prepareRecording(
             JNIEnv *env, jclass) {
         if (engine == nullptr) {
             LOGE(
                     "Engine is null, you must call createEngine before calling this "
                     "method");
-            return;
+            return JNI_FALSE;
         }
 
-        engine->prepareRecording(env);
+        return engine->prepareRecording(env) ? JNI_TRUE : JNI_FALSE;
     }
 
-    JNIEXPORT void JNICALL
+    JNIEXPORT jboolean JNICALL
     Java_tech_schober_vinylcast_audio_NativeAudioEngine_startRecording(JNIEnv *env, jclass) {
         if (engine == nullptr) {
             LOGE(
                     "Engine is null, you must call createEngine before calling this "
                     "method");
-            return;
+            return -1;
         }
 
-        engine->startRecording(env);
+        return engine->startRecording(env) ? JNI_TRUE : JNI_FALSE;
     }
 
-    JNIEXPORT void JNICALL
+    JNIEXPORT jboolean JNICALL
     Java_tech_schober_vinylcast_audio_NativeAudioEngine_stopRecording(JNIEnv *env, jclass) {
         if (engine == nullptr) {
             LOGE(
                     "Engine is null, you must call createEngine before calling this "
                     "method");
-            return;
+            return JNI_FALSE;
         }
 
-        engine->stopRecording(env);
+        return engine->stopRecording(env) ? JNI_TRUE : JNI_FALSE;
     }
 
     JNIEXPORT void JNICALL
@@ -109,6 +109,18 @@ extern "C" {
     }
 
     JNIEXPORT jboolean JNICALL
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_setLowLatency(JNIEnv *env, jclass type, jboolean lowLatency) {
+        if (engine == nullptr) {
+            LOGE(
+                    "Engine is null, you must call createEngine "
+                    "before calling this method");
+            return JNI_FALSE;
+        }
+
+        return engine->setLowLatency(lowLatency);
+    }
+
+    JNIEXPORT jboolean JNICALL
     Java_tech_schober_vinylcast_audio_NativeAudioEngine_setAudioApi(JNIEnv *env,jclass type, jint apiType) {
         if (engine == nullptr) {
             LOGE(
@@ -134,14 +146,14 @@ extern "C" {
     }
 
     JNIEXPORT jboolean JNICALL
-    Java_tech_schober_vinylcast_audio_NativeAudioEngine_isAAudioSupported(JNIEnv *env, jclass type) {
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_isAAudioSupportedAndRecommended(JNIEnv *env, jclass type) {
         if (engine == nullptr) {
             LOGE(
                     "Engine is null, you must call createEngine "
                     "before calling this method");
             return JNI_FALSE;
         }
-        return engine->isAAudioSupported() ? JNI_TRUE : JNI_FALSE;
+        return engine->isAAudioSupportedAndRecommended() ? JNI_TRUE : JNI_FALSE;
     }
 
     JNIEXPORT void JNICALL
@@ -187,5 +199,16 @@ extern "C" {
             return JNI_ERR;
         }
         return engine->getAudioApi();
+    }
+
+    JNIEXPORT jstring JNICALL
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_getOboeVersion(JNIEnv *env, jclass type) {
+        if (engine == nullptr) {
+            LOGE(
+                    "Engine is null, you must call createEngine "
+                    "before calling this method");
+            return nullptr;
+        }
+        return env->NewStringUTF(engine->getOboeVersion());
     }
 }

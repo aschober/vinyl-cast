@@ -53,9 +53,4 @@ public class AudioDeviceAdapter extends ArrayAdapter<AudioDeviceListEntry> {
 
         return rowView;
     }
-
-    @Override
-    public long getItemId(int position) {
-        return super.getItem(position).getId();
-    }
 }
