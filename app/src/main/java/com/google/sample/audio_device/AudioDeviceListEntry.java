@@ -20,7 +20,6 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 

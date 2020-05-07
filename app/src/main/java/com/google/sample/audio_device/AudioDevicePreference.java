@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import tech.schober.vinylcast.R;
+
 public class AudioDevicePreference extends ListPreference {
     private static final String TAG = AudioDeviceSpinner.class.getName();
 
@@ -68,7 +70,7 @@ public class AudioDevicePreference extends ListPreference {
 
         // Add a default entry to the list
         mDeviceAdapter.add(new AudioDeviceListEntry(AUDIO_DEVICE_ID_AUTO_SELECT, AudioDeviceInfo.TYPE_UNKNOWN,
-                context.getString(R.string.auto_select)));
+                context.getString(R.string.audio_device_auto_select)));
     }
 
     @Override
@@ -133,7 +135,7 @@ public class AudioDevicePreference extends ListPreference {
         if (directionType == AudioManager.GET_DEVICES_OUTPUTS) {
             // Add an entry for NONE to the list
             mDeviceAdapter.insert(new AudioDeviceListEntry(AUDIO_DEVICE_ID_NONE, AudioDeviceInfo.TYPE_UNKNOWN,
-                    mContext.getString(R.string.none)), 0);
+                    mContext.getString(R.string.audio_device_none)), 0);
         }
 
         setupAudioDeviceCallback();

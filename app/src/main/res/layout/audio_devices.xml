@@ -19,5 +19,4 @@
     android:id="@+id/device_name"
     android:layout_width="match_parent"
     android:layout_height="64dp"
-    android:padding="@dimen/default_padding"
-    android:text="@string/device_name"/>
+    android:padding="@dimen/activity_horizontal_margin" />

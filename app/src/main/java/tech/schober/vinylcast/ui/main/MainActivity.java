@@ -300,6 +300,7 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
             startRecordingIndicator.setImageResource(R.drawable.ic_media_stop_dark);
             animateRecord(true);
         } else {
+            audioVisualizer.clearData();
             startRecordingIndicator.setImageResource(R.drawable.ic_media_play_dark);
             animateRecord(false);
         }

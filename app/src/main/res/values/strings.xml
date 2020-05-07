@@ -30,6 +30,10 @@
     <string name="menu_settings">Settings</string>
     <string name="title_audio_acr">Audio Identification</string>
 
+    <string name="audio_device_device_name">Device Name</string>
+    <string name="audio_device_auto_select">Auto select</string>
+    <string name="audio_device_none">None</string>
+
     <string name="prefs_title_category_audio_devices">Audio Devices</string>
     <string name="prefs_title_recording_device">Recording Device</string>
     <string name="prefs_title_local_playback_device">Local Playback Device</string>

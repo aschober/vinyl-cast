@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import tech.schober.vinylcast.R;
+
 public class AudioDeviceSpinner extends androidx.appcompat.widget.AppCompatSpinner {
     private static final String TAG = AudioDeviceSpinner.class.getName();
 
@@ -73,7 +75,7 @@ public class AudioDeviceSpinner extends androidx.appcompat.widget.AppCompatSpinn
 
         // Add a default entry to the list and select it
         mDeviceAdapter.add(new AudioDeviceListEntry(AUTO_SELECT_DEVICE_ID, AudioDeviceInfo.TYPE_UNKNOWN,
-                context.getString(R.string.auto_select)));
+                context.getString(R.string.audio_device_auto_select)));
         setSelection(0);
     }
 
@@ -84,7 +86,7 @@ public class AudioDeviceSpinner extends androidx.appcompat.widget.AppCompatSpinn
         if (directionType == AudioManager.GET_DEVICES_OUTPUTS) {
             // Add a default entry to the list and select it
             mDeviceAdapter.insert(new AudioDeviceListEntry(NONE_DEVICE_ID, AudioDeviceInfo.TYPE_UNKNOWN,
-                    mContext.getString(R.string.none)), 0);
+                    mContext.getString(R.string.audio_device_none)), 0);
             setSelection(0);
         }
 
