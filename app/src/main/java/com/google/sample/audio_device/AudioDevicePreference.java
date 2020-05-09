@@ -19,7 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import tech.schober.vinylcast.R;
-import tech.schober.vinylcast.audio.AudioRecorder;
+import tech.schober.vinylcast.audio.AudioRecordStreamProvider;
 
 public class AudioDevicePreference extends ListPreference {
     private static final String TAG = AudioDeviceSpinner.class.getName();
@@ -67,7 +67,7 @@ public class AudioDevicePreference extends ListPreference {
         mDeviceAdapter = createAdapter(mContext);
 
         // Add a default entry to the list
-        mDeviceAdapter.add(new AudioDeviceListEntry(AudioRecorder.AUDIO_DEVICE_ID_AUTO_SELECT, AudioDeviceInfo.TYPE_UNKNOWN,
+        mDeviceAdapter.add(new AudioDeviceListEntry(AudioRecordStreamProvider.AUDIO_DEVICE_ID_AUTO_SELECT, AudioDeviceInfo.TYPE_UNKNOWN,
                 context.getString(R.string.audio_device_auto_select)));
     }
 
@@ -132,7 +132,7 @@ public class AudioDevicePreference extends ListPreference {
 
         if (directionType == AudioManager.GET_DEVICES_OUTPUTS) {
             // Add an entry for NONE to the list
-            mDeviceAdapter.insert(new AudioDeviceListEntry(AudioRecorder.AUDIO_DEVICE_ID_NONE, AudioDeviceInfo.TYPE_UNKNOWN,
+            mDeviceAdapter.insert(new AudioDeviceListEntry(AudioRecordStreamProvider.AUDIO_DEVICE_ID_NONE, AudioDeviceInfo.TYPE_UNKNOWN,
                     mContext.getString(R.string.audio_device_none)), 0);
         }
 

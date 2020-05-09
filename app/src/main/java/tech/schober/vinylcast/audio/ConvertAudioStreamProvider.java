@@ -21,7 +21,7 @@ import tech.schober.vinylcast.utils.Helpers;
  * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.
  * Based on https://stackoverflow.com/questions/18862715/how-to-generate-the-aac-adts-elementary-stream-with-android-mediacodec
  */
-public class ConvertAudioTask implements Runnable, AudioStreamProvider {
+public class ConvertAudioStreamProvider implements Runnable, AudioStreamProvider {
     private static final String TAG = "ConvertAudioTask";
 
     private static final String CODEC_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
@@ -34,7 +34,7 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
     private static final int ADTS_HEADER_SAMPLE_RATE_INDEX = 3; // 3 = 48000, 4 = 44100
     private static final int ADTS_HEADER_CHANNEL_CONFIG = 2; // 2 Channel
 
-    private InputStream nativeAudioStream;
+    private InputStream inputAudioStream;
     private int sampleRate;
     private int channelCount;
     private OutputStream convertedAudioWriteStream;
@@ -42,15 +42,15 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
 
     /**
      * Create a ConvertAudioTask
-     * @param sampleRate
-     * @param channelCount
+     * @param rawAudioStream
      * @param bufferSize
      */
-    public ConvertAudioTask(InputStream nativeAudioStream, int sampleRate, int channelCount, int bufferSize) throws IOException {
+    public ConvertAudioStreamProvider(AudioStreamProvider rawAudioStream, int bufferSize) throws IOException {
+        this.inputAudioStream = rawAudioStream.getAudioInputStream();
+        this.sampleRate = rawAudioStream.getSampleRate();
+        this.channelCount = rawAudioStream.getChannelCount();
         Log.d(TAG, "ConvertAudioTask - sampleRate: " + sampleRate +", channel count: " + channelCount);
-        this.nativeAudioStream = nativeAudioStream;
-        this.sampleRate = sampleRate;
-        this.channelCount = channelCount;
+
         Pair<OutputStream, InputStream> convertedAudioStreams = Helpers.getPipedAudioStreams(bufferSize);
         this.convertedAudioWriteStream = convertedAudioStreams.first;
         this.convertedAudioReadStream = convertedAudioStreams.second;
@@ -67,10 +67,10 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
         ByteBuffer inputBuffer = codec.getInputBuffer(inputBufferId);
         inputBuffer.clear();
 
-        int bytesAvailable = nativeAudioStream.available();
+        int bytesAvailable = inputAudioStream.available();
         int bytesToWrite = bytesAvailable < inputBuffer.limit() ? bytesAvailable : inputBuffer.limit();
 
-        inputBuffer.put(IOUtils.toByteArray(nativeAudioStream, bytesToWrite));
+        inputBuffer.put(IOUtils.toByteArray(inputAudioStream, bytesToWrite));
         codec.queueInputBuffer(inputBufferId, 0, bytesToWrite, 0, 0);
         return bytesToWrite;
     }
@@ -219,5 +219,36 @@ public class ConvertAudioTask implements Runnable, AudioStreamProvider {
     @Override
     public InputStream getAudioInputStream() {
         return convertedAudioReadStream;
+    }
+
+    @Override
+    public int getSampleRate() {
+        return sampleRate;
+    }
+
+    @Override
+    public int getChannelCount() {
+        return channelCount;
+    }
+
+    @Override
+    public int getAudioEncoding() {
+        return AUDIO_ENCODING_AAC;
+    }
+
+    public static int getConvertAudioStreamSampleRate() {
+        return NativeAudioEngine.getSampleRate();
+    }
+
+    public static int getConvertAudioStreamChannelCount() {
+        return NativeAudioEngine.getChannelCount();
+    }
+
+    public static int getConvertAudioStreamBitRate() {
+        return CODEC_BIT_RATE;
+    }
+
+    public static @AudioEncoding int getConvertAudioStreamAudioEncoding() {
+        return AUDIO_ENCODING_AAC;
     }
 }

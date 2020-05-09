@@ -19,7 +19,7 @@
             app:defaultValue="@string/prefs_default_local_playback_device_id"
             app:useSimpleSummaryProvider="true" />
 
-        <CheckBoxPreference
+        <tech.schober.vinylcast.ui.settings.CheckOnClickCheckboxPreference
             app:key="@string/prefs_key_low_latency"
             app:title="@string/prefs_title_low_latency"
             app:summary="@string/prefs_summary_low_latency"

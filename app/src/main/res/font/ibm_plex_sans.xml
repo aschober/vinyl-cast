@@ -41,7 +41,7 @@
         app:font="@font/ibm_plex_sans_light" />
     <font
         android:fontStyle="italic"
-        android:fontWeight="100"
+        android:fontWeight="300"
         android:font="@font/ibm_plex_sans_lightitalic"
         app:fontStyle="italic"
         app:fontWeight="300"

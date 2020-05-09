@@ -3,13 +3,12 @@ package tech.schober.vinylcast.ui.settings;
 import android.content.Context;
 import android.util.AttributeSet;
 
-import androidx.preference.ListPreference;
-import androidx.preference.PreferenceManager;
+import androidx.preference.CheckBoxPreference;
 
 /**
- * Extension of ListPreference so we can check onPreferenceClick method before
+ * Extension of CheckBoxPreference so we can check onPreferenceClick method before
  * performing the onClick method. This allows us to intercept the click in SettingsFragment
- * and do a different action instead of opening list dialog (e.g. show a different dialog saying
+ * and do a different action instead of toggling checkbox (e.g. show a different dialog saying
  * preference can't be modified when recording).
  *
  * Not sure why Android/AndroidX's ListPreference calls onClick (causing an action to occur)
@@ -17,21 +16,20 @@ import androidx.preference.PreferenceManager;
  *
  * https://stackoverflow.com/a/32357583
  */
-public class CheckOnClickListPreference extends ListPreference {
-
-    public CheckOnClickListPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-    }
-
-    public CheckOnClickListPreference(Context context, AttributeSet attrs, int defStyleAttr) {
+public class CheckOnClickCheckboxPreference extends CheckBoxPreference {
+    public CheckOnClickCheckboxPreference(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
 
-    public CheckOnClickListPreference(Context context, AttributeSet attrs) {
+    public CheckOnClickCheckboxPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+    }
+
+    public CheckOnClickCheckboxPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public CheckOnClickListPreference(Context context) {
+    public CheckOnClickCheckboxPreference(Context context) {
         super(context);
     }
 

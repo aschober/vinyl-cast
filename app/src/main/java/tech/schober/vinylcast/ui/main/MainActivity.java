@@ -1,6 +1,7 @@
 package tech.schober.vinylcast.ui.main;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,7 +17,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import tech.schober.vinylcast.R;
-import tech.schober.vinylcast.VinylCastService;
 import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.ui.VinylCastActivity;
 import tech.schober.vinylcast.ui.settings.SettingsActivity;
@@ -55,9 +54,10 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
     private TextView artistTextView;
     private ImageView coverArtImage;
 
+    private PlayStopView playStopButton;
     private ImageButton startRecordingButton;
-    private ImageView startRecordingIndicator;
-    private Animation recordingButtonAnimation;
+    private ObjectAnimator recordingButtonAnimator;
+    private long recordingButtonAnimationTime = 0;
 
     private BarGraphView audioVisualizer;
 
@@ -79,19 +79,13 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
 
         // button to begin audio record
         startRecordingButton = findViewById(R.id.startRecordingButton);
-        startRecordingIndicator = findViewById(R.id.startRecordingIndicator);
-        startRecordingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startRecordingButtonClicked();
-            }
-        });
+        startRecordingButton.setOnClickListener(v -> startRecordingButtonClicked());
 
-        recordingButtonAnimation = new RotateAnimation(0, 359.5f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        recordingButtonAnimation.setFillAfter(true);
-        recordingButtonAnimation.setDuration(1800); // ~33.33 RPM
-        recordingButtonAnimation.setInterpolator(new LinearInterpolator());
-        recordingButtonAnimation.setRepeatCount(Animation.INFINITE);
+        playStopButton = findViewById(R.id.play_pause_view);
+        playStopButton.setOnClickListener(v -> {
+            playStopButton.toggle();
+            startRecordingButtonClicked();
+        });
 
         audioVisualizer = findViewById(R.id.audio_visualizer);
     }
@@ -172,16 +166,11 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
         if (!isServiceRecording) {
             if (!hasRecordAudioPermission()) {
                 requestRecordAudioPermission();
-            } else if (!hasBuiltInDevicesSelected(new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    startRecording();
-                }
-            })) {
-                startRecording();
+            } else if (!hasBuiltInDevicesSelected((dialog, which) -> startVinylCast())) {
+                startVinylCast();
             }
         } else {
-            stopRecording();
+            stopVinylCast();
         }
     }
 
@@ -258,21 +247,17 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
         f.show(fm, "androidx.mediarouter:MediaRouteChooserDialogFragment");
     }
 
-    private void startRecording() {
+    private void startVinylCast() {
         if (!isServiceRecording) {
-            Intent startIntent = new Intent(MainActivity.this, VinylCastService.class);
-            startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
-            MainActivity.this.startService(startIntent);
+            binder.start();
         } else {
             Log.d(TAG, "VinylCastService is already running");
         }
     }
 
-    private void stopRecording() {
+    private void stopVinylCast() {
         if (isServiceRecording) {
-            Intent stopIntent = new Intent(MainActivity.this, VinylCastService.class);
-            stopIntent.setAction(VinylCastService.ACTION_STOP_RECORDING);
-            MainActivity.this.startService(stopIntent);
+            binder.stop();
         } else {
             Log.d(TAG, "VinylCastService is not running");
         }
@@ -280,9 +265,20 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
 
     private void animateRecord(boolean animate) {
         if (animate) {
-            startRecordingButton.startAnimation(recordingButtonAnimation);
+            if (recordingButtonAnimator == null) {
+                recordingButtonAnimator = ObjectAnimator.ofFloat(startRecordingButton, "rotation", 0, 360);
+                recordingButtonAnimator.setDuration(1800); // ~33.33 RPM
+                recordingButtonAnimator.setInterpolator(new LinearInterpolator());
+                recordingButtonAnimator.setRepeatCount(Animation.INFINITE);
+                recordingButtonAnimator.start();
+            }
+            // looks better if we go back in time a bit
+            recordingButtonAnimator.setCurrentPlayTime(recordingButtonAnimator.getCurrentPlayTime()-500);
+            recordingButtonAnimator.resume();
         } else {
-            startRecordingButton.clearAnimation();
+            if (recordingButtonAnimator != null) {
+                recordingButtonAnimator.pause();
+            }
         }
     }
 
@@ -292,11 +288,11 @@ public class MainActivity extends VinylCastActivity implements AudioVisualizer.A
     public void updateRecordingState(boolean isRecording) {
         isServiceRecording = isRecording;
         if (isRecording) {
-            startRecordingIndicator.setImageResource(R.drawable.ic_media_stop_dark);
+            playStopButton.change(false);
             animateRecord(true);
         } else {
+            playStopButton.change(true);
             audioVisualizer.clearData();
-            startRecordingIndicator.setImageResource(R.drawable.ic_media_play_dark);
             animateRecord(false);
         }
     }

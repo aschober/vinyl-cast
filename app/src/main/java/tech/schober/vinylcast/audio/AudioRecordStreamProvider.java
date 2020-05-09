@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import tech.schober.vinylcast.utils.Helpers;
 
-public class AudioRecorder implements AudioStreamProvider {
+public class AudioRecordStreamProvider implements AudioStreamProvider {
 
     private static final String TAG = "AudioRecorder";
 
@@ -30,7 +30,7 @@ public class AudioRecorder implements AudioStreamProvider {
     protected int bufferSize;
     private CopyOnWriteArrayList<OutputStream> nativeAudioWriteStreams = new CopyOnWriteArrayList<>();
 
-    public AudioRecorder(int recordingDeviceId, int playbackDeviceId, boolean lowLatency, int bufferSize) {
+    public AudioRecordStreamProvider(int recordingDeviceId, int playbackDeviceId, boolean lowLatency, int bufferSize) {
         NativeAudioEngine.setRecordingDeviceId(recordingDeviceId);
         NativeAudioEngine.setPlaybackDeviceId(playbackDeviceId);
         NativeAudioEngine.setLowLatency(lowLatency);
@@ -100,15 +100,22 @@ public class AudioRecorder implements AudioStreamProvider {
         return audioStreams.second;
     }
 
-    public static int getSampleRate() {
+    @Override
+    public int getSampleRate() {
         return NativeAudioEngine.getSampleRate();
     }
 
-    public static int getChannelCount() {
+    @Override
+    public int getChannelCount() {
         return NativeAudioEngine.getChannelCount();
     }
 
-    public static String getAudioApi() {
+    @Override
+    public int getAudioEncoding() {
+        return AUDIO_ENCODING_WAV;
+    }
+
+    public String getAudioApi() {
         switch(NativeAudioEngine.getAudioApi()) {
             case AUDIO_API_OPENSLES:
                 return "OpenSL ES";
@@ -117,5 +124,21 @@ public class AudioRecorder implements AudioStreamProvider {
             default:
                 return "[not recording]";
         }
+    }
+
+    public static int getAudioRecordStreamSampleRate() {
+        return NativeAudioEngine.getSampleRate();
+    }
+
+    public static int getAudioRecordStreamChannelCount() {
+        return NativeAudioEngine.getChannelCount();
+    }
+
+    public static int getAudioRecordStreamBitRate() {
+        return NativeAudioEngine.getBitRate();
+    }
+
+    public static @AudioEncoding int getAudioRecordStreamAudioEncoding() {
+        return AUDIO_ENCODING_WAV;
     }
 }

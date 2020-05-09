@@ -7,6 +7,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
@@ -17,13 +19,21 @@ import androidx.preference.PreferenceFragmentCompat;
 
 import com.google.sample.audio_device.AudioDevicePreference;
 
+import java.text.DecimalFormat;
+import java.util.Locale;
+
 import tech.schober.vinylcast.BuildConfig;
 import tech.schober.vinylcast.R;
 import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.audio.AudioRecordStreamProvider;
+import tech.schober.vinylcast.audio.AudioStreamProvider;
+import tech.schober.vinylcast.audio.ConvertAudioStreamProvider;
 import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpClient;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerListener;
+
+import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 
 
 public class SettingsFragment extends PreferenceFragmentCompat implements ServiceConnection {
@@ -34,14 +44,15 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
     private Preference.OnPreferenceClickListener disabledPreferenceClickListener = new Preference.OnPreferenceClickListener() {
         @Override
         public boolean onPreferenceClick(Preference preference) {
+            Log.d(TAG, "onPreferenceClick: " + preference.getKey());
             boolean isRecording = (binder != null && binder.isRecording());
             if (isRecording) {
                 new AlertDialog.Builder(getContext())
-                        .setTitle("Recording In-Progress")
-                        .setMessage("You cannot change this setting while recording is in-progress.")
+                        .setTitle(R.string.alert_recordinginprogress_title)
+                        .setMessage(R.string.alert_recordinginprogress_message)
                         // The dialog is automatically dismissed when a dialog button is clicked.
                         .setPositiveButton(android.R.string.ok, null)
-                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .setIcon(R.drawable.ic_warning_accent2_24dp)
                         .show();
                 return true;
             } else {
@@ -71,6 +82,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+        Log.d(TAG, "onCreatePreferences");
+
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
         AudioDevicePreference recordingDevicePref = findPreference(R.string.prefs_key_recording_device_id);
@@ -93,9 +106,22 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             lowLatencyPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (audioEncodingPref != null) {
+            audioEncodingPref.setWidgetLayoutResource(R.layout.pref_widget_button);
             audioEncodingPref.setEntries(R.array.prefs_audio_encoding_entries);
             audioEncodingPref.setEntryValues(R.array.prefs_audio_encoding_entry_values);
             audioEncodingPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
+        }
+        if (feedbackPref != null) {
+            feedbackPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+//                    if (binder != null) {
+//                        Instabug.setUserAttribute("Audio API", binder.getAudioApi());
+//                    }
+//                    Instabug.show();
+                    return true;
+                }
+            });
         }
         if (androidApiLevelPref != null) {
             androidApiLevelPref.setSummaryProvider(new Preference.SummaryProvider<Preference>() {
@@ -150,7 +176,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
     }
 
     private void updateDynamicPreferences() {
-        getActivity().runOnUiThread(new UpdateDynamicPrefsRunnable());
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(new UpdateDynamicPrefsRunnable());
+        }
     }
 
     class UpdateDynamicPrefsRunnable implements Runnable {
@@ -159,9 +187,24 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             // update audio and http server preferences on main thread
             boolean isRecording = (binder != null && binder.isRecording());
 
+            ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
             Preference httpServerPref = findPreference(R.string.prefs_key_http_server);
             Preference httpClientsPref = findPreference(R.string.prefs_key_http_clients);
             Preference audioApiPref = findPreference(R.string.prefs_key_audio_api);
+
+            if (getView() != null) {
+                ImageButton prefImageButton = getView().findViewById(R.id.pref_image_button);
+                if (isRecording) {
+                    prefImageButton.setVisibility(View.VISIBLE);
+                    prefImageButton.setOnClickListener(l -> {
+                        Log.d(TAG, "Pref Button pressed!");
+                        getAudioEncodingInfoDialog(Integer.valueOf(audioEncodingPref.getValue())).show();
+                    });
+                } else {
+                    prefImageButton.setVisibility(View.GONE);
+                    prefImageButton.setOnClickListener(null);
+                }
+            }
 
             if (!isRecording) {
                 httpServerPref.setSummary(R.string.prefs_default_summary_http_server);
@@ -200,11 +243,47 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
     private String getAudioApiVersionString() {
         if (binder != null && binder.isRecording()) {
-            return "Oboe " + NativeAudioEngine.getOboeVersion() + ": " + binder.getAudioApi();
+            return "Oboe " + NativeAudioEngine.getOboeVersion() + ": " + binder.getRecorderAudioApi();
         } else {
             boolean isAAudio = NativeAudioEngine.isAAudioSupportedAndRecommended();
             return "Oboe " + NativeAudioEngine.getOboeVersion() + ": " + (isAAudio ? "AAudio" : "OpenSL ES");
         }
+    }
+
+    private AlertDialog getAudioEncodingInfoDialog(@AudioStreamProvider.AudioEncoding int audioEncoding) {
+        float sampleRateKhz;
+        int channelCount;
+        float bitRateKbps;
+        int titleResId;
+
+        switch (audioEncoding) {
+            case AUDIO_ENCODING_AAC:
+                sampleRateKhz = ConvertAudioStreamProvider.getConvertAudioStreamSampleRate() / 1000f;
+                channelCount = ConvertAudioStreamProvider.getConvertAudioStreamChannelCount();
+                bitRateKbps = ConvertAudioStreamProvider.getConvertAudioStreamBitRate() / 1000f;
+                titleResId = R.string.alert_encodingdetails_aac_title;
+                break;
+            default:
+                sampleRateKhz = AudioRecordStreamProvider.getAudioRecordStreamSampleRate() / 1000f;
+                channelCount = AudioRecordStreamProvider.getAudioRecordStreamChannelCount();
+                bitRateKbps = AudioRecordStreamProvider.getAudioRecordStreamBitRate() / 1000f;
+                titleResId = R.string.alert_encodingdetails_aac_title;
+                break;
+        }
+
+        String message = String.format(Locale.getDefault(),
+                "Sample Rate: %s kHz\nChannels: %d\nBit Rate: %s kbps",
+                new DecimalFormat("#.#").format(sampleRateKhz),
+                channelCount,
+                new DecimalFormat("#.#").format(bitRateKbps));
+
+        return new AlertDialog.Builder(getContext())
+                .setTitle(titleResId)
+                .setMessage(message)
+                // The dialog is automatically dismissed when a dialog button is clicked.
+                .setPositiveButton(android.R.string.ok, null)
+                .setIcon(R.drawable.ic_info_outline_accent2_24dp)
+                .create();
     }
 }
 

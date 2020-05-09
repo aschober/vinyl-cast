@@ -113,6 +113,21 @@ int32_t NativeAudioEngine::getChannelCount() {
     }
 }
 
+int32_t NativeAudioEngine::getBitRate() {
+    if (mRecordingStream && mPlayStream) {
+        int bitsPerSample = 0;
+        if (mFormat == oboe::AudioFormat::I16) {
+            bitsPerSample = 16;
+        } else if (mFormat == oboe::AudioFormat::Float) {
+            bitsPerSample = 32;
+        }
+        return mSampleRate * mInputChannelCount * bitsPerSample;
+    } else {
+        LOGE("Recording and/or Playback streams not created yet. Need to call prepareRecording() first.");
+        return -1;
+    }
+}
+
 int32_t NativeAudioEngine::getAudioApi() {
     if (mRecordingStream && mPlayStream) {
         return static_cast<int32_t>(mAudioApi);

@@ -18,7 +18,6 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
-import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
@@ -28,25 +27,24 @@ import androidx.preference.PreferenceManager;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaLoadRequestData;
 import com.google.android.gms.cast.MediaMetadata;
-import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.Session;
-import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
-import tech.schober.vinylcast.audio.AudioRecorder;
+import tech.schober.vinylcast.audio.AudioRecordStreamProvider;
+import tech.schober.vinylcast.audio.AudioStreamProvider;
 import tech.schober.vinylcast.audio.AudioVisualizer;
-import tech.schober.vinylcast.audio.ConvertAudioTask;
+import tech.schober.vinylcast.audio.ConvertAudioStreamProvider;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerImpl;
 import tech.schober.vinylcast.ui.main.MainActivity;
 import tech.schober.vinylcast.utils.Helpers;
+
+import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 
 public class VinylCastService extends MediaBrowserServiceCompat {
     private static final String TAG = "VinylCastService";
@@ -57,12 +55,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     public static final String ACTION_START_RECORDING = "tech.schober.vinylcast.ACTION_START_RECORDING";
     public static final String ACTION_STOP_RECORDING = "tech.schober.vinylcast.ACTION_STOP_RECORDING";
 
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef({AUDIO_ENCODING_WAV, AUDIO_ENCODING_AAC})
-    public @interface AudioEncoding {}
-    public static final int AUDIO_ENCODING_WAV = 0;
-    public static final int AUDIO_ENCODING_AAC = 1;
-
     private static final int AUDIO_STREAM_BUFFER_SIZE = 8192;
     private static final int AUDIO_VISUALIZER_FFT_LENGTH = 256;
     private static final int AUDIO_VISUALIZER_FFT_BINS = 16;
@@ -70,18 +62,19 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private final IBinder binder = new VinylCastBinder();
     private MainActivity mainActivity;
 
-    private AudioRecorder audioRecorder;
+    private AudioRecordStreamProvider audioRecordStreamProvider;
 
     private Thread convertAudioThread;
+    private ConvertAudioStreamProvider convertAudioStreamProvider;
 
     private HttpStreamServer httpStreamServer;
+    private AudioStreamProvider httpStreamProvider;
 
     private AudioVisualizer audioVisualizer;
 
-    private AudioManager.OnAudioFocusChangeListener afChangeListener;
+    private AudioManager.OnAudioFocusChangeListener audioFocusChangeListener;
     private AudioFocusRequest audioFocusRequest;
     private MediaSessionCompat mediaSession;
-    private SessionManager castSessionManager;
     private SessionManagerListener castSessionManagerListener;
     private BecomingNoisyReceiver becomingNoisyReceiver;
     private IntentFilter becomingNoisyIntentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
@@ -104,32 +97,40 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             updateMainActivity();
         }
 
-        public InputStream getAudioInputStream() {
-            if (isRecording()) {
-                return audioRecorder.getAudioInputStream();
-            } else {
-                return null;
-            }
+        public void start() {
+            VinylCastService.this.engage();
         }
 
-        public int getSampleRate() {
-            return AudioRecorder.getSampleRate();
+        public void stop() {
+            VinylCastService.this.disengage();
         }
 
-        public int getChannelCount() {
-            return AudioRecorder.getChannelCount();
+        public int getRecorderSampleRate() {
+            return audioRecordStreamProvider.getSampleRate();
         }
 
-        public String getAudioApi() {
-            return AudioRecorder.getAudioApi();
+        public int getRecorderChannelCount() {
+            return audioRecordStreamProvider.getChannelCount();
+        }
+
+        public String getRecorderAudioApi() {
+            return audioRecordStreamProvider.getAudioApi();
+        }
+
+        public HttpStreamServer getHttpStreamServer() {
+            return httpStreamServer;
         }
 
         public int getAudioStreamBufferSize() {
             return AUDIO_STREAM_BUFFER_SIZE;
         }
 
-        public HttpStreamServer getHttpStreamServer() {
-            return httpStreamServer;
+        public InputStream getRawAudioInputStream() {
+            if (isRecording()) {
+                return audioRecordStreamProvider.getAudioInputStream();
+            } else {
+                return null;
+            }
         }
 
         public void updateMediaSessionMetadata(String trackTitle, String artist, String album, BitmapDrawable albumImage) {
@@ -173,8 +174,6 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        // get Cast session manager
-        castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
 
         // Create a MediaSessionCompat
         mediaSession = new MediaSessionCompat(this, TAG);
@@ -196,7 +195,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         if (castSessionManagerListener == null) {
             castSessionManagerListener = new CastSessionManagerListener();
-            castSessionManager.addSessionManagerListener(castSessionManagerListener);
+            ((VinylCastApplication)getApplication()).getCastSessionManager().addSessionManagerListener(castSessionManagerListener);
         }
 
         String action = intent.getAction();
@@ -204,10 +203,10 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         switch (action) {
             case VinylCastService.ACTION_START_RECORDING:
-                start();
+                engage();
                 break;
             case VinylCastService.ACTION_STOP_RECORDING:
-                stop();
+                disengage();
                 break;
             default:
                 MediaButtonReceiver.handleIntent(mediaSession, intent);
@@ -221,7 +220,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         if (castSessionManagerListener != null) {
-            castSessionManager.removeSessionManagerListener(castSessionManagerListener);
+            ((VinylCastApplication)getApplication()).getCastSessionManager().removeSessionManagerListener(castSessionManagerListener);
             castSessionManagerListener = null;
         }
         mediaSession.release();
@@ -229,44 +228,56 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         super.onDestroy();
     }
 
-    private void start() {
-        Log.i(TAG, "start");
-
-        if (isPlaybackDeviceSelected() && !requestAudioFocus()) {
-            Log.e(TAG, "Failed to get Audio Focus for playback. Stopping VinylCastService...");
-            // TODO Error!
-            stop();
-            return;
-        }
+    private void engage() {
+        Log.i(TAG, "engage");
 
         // fetch audio record settings values out of SharedPreferences
         int recordingDeviceId = Helpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_recording_device_id, R.string.prefs_default_recording_device_id);
         int playbackDeviceId = Helpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_local_playback_device_id, R.string.prefs_default_local_playback_device_id);
-        @AudioEncoding int audioEncoding = Helpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_audio_encoding, R.string.prefs_default_audio_encoding);
+        @AudioStreamProvider.AudioEncoding int audioEncoding = Helpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_audio_encoding, R.string.prefs_default_audio_encoding);
         boolean lowLatency = PreferenceManager.getDefaultSharedPreferences (this).getBoolean(getString(R.string.prefs_key_low_latency), Boolean.valueOf(getString(R.string.prefs_default_low_latency)));
 
-        if (!startAudioRecord(recordingDeviceId, playbackDeviceId, lowLatency)) {
-            Log.e(TAG, "Failed to start AudioRecord. Stopping VinylCastService...");
+        if (isPlaybackDeviceSelected() && !requestAudioFocus()) {
+            Log.e(TAG, "Failed to get Audio Focus for playback. Stopping VinylCastService...");
             // TODO Error!
-            stop();
+            disengage();
             return;
         }
 
-        if (audioEncoding == AUDIO_ENCODING_AAC) {
-            InputStream convertedAudioInputStream = startAudioConversion(
-                    audioRecorder.getAudioInputStream(),
-                    audioRecorder.getSampleRate(),
-                    audioRecorder.getChannelCount(),
-                    AUDIO_STREAM_BUFFER_SIZE);
-            startHttpServer(convertedAudioInputStream, audioEncoding);
-        } else {
-            startHttpServer(audioRecorder.getAudioInputStream(), audioEncoding);
+        if (!startAudioRecord(recordingDeviceId, playbackDeviceId, lowLatency)) {
+            Log.e(TAG, "Failed to start Audio Record. Stopping VinylCastService...");
+            // TODO Error!
+            disengage();
+            return;
+        }
+
+        switch (audioEncoding) {
+            case AUDIO_ENCODING_AAC:
+                if (!startAudioConverter(audioRecordStreamProvider, AUDIO_STREAM_BUFFER_SIZE)) {
+                    Log.e(TAG, "Failed to start Audio Converter. Stopping VinylCastService...");
+                    // TODO Error!
+                    disengage();
+                    return;
+                }
+                httpStreamProvider = convertAudioStreamProvider;
+                break;
+            default:
+                httpStreamProvider = audioRecordStreamProvider;
+                break;
+        }
+
+        if (!startHttpServer(httpStreamProvider)) {
+            Log.e(TAG, "Failed to start HTTP Server. Stopping VinylCastService...");
+            // TODO Error!
+            disengage();
+            return;
         }
 
         //startAudioRecognition();
+
         startAudioVisualizer(
-                audioRecorder.getAudioInputStream(),
-                audioRecorder.getSampleRate(),
+                audioRecordStreamProvider.getAudioInputStream(),
+                audioRecordStreamProvider.getSampleRate(),
                 AUDIO_VISUALIZER_FFT_LENGTH,
                 AUDIO_VISUALIZER_FFT_BINS);
 
@@ -285,14 +296,14 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         updateCastSession();
     }
 
-    private void stop() {
-        Log.i(TAG, "stop");
+    private void disengage() {
+        Log.i(TAG, "disengage");
         unregisterForBecomingNoisy();
         abandonAudioFocus();
         stopAudioRecognition();
         stopHttpServer();
         stopAudioVisualizer();
-        stopAudioConversion();
+        stopAudioConverter();
         stopAudioRecord();
 
         // remove service from foreground
@@ -304,21 +315,21 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     }
 
     private boolean isRecording() {
-        return audioRecorder != null;
+        return audioRecordStreamProvider != null;
     }
 
     private boolean isPlaybackDeviceSelected() {
         int playbackDeviceId = Helpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_local_playback_device_id, R.string.prefs_default_local_playback_device_id);
-        return playbackDeviceId != AudioRecorder.AUDIO_DEVICE_ID_NONE;
+        return playbackDeviceId != AudioRecordStreamProvider.AUDIO_DEVICE_ID_NONE;
     }
 
     private boolean requestAudioFocus() {
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        afChangeListener =  focusChange -> {
+        audioFocusChangeListener = focusChange -> {
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_LOSS:
                     Log.d(TAG, "Lost Audio Focus. stopping...");
-                    stop();
+                    disengage();
                     break;
 
             }
@@ -330,13 +341,13 @@ public class VinylCastService extends MediaBrowserServiceCompat {
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build();
             audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                    .setOnAudioFocusChangeListener(afChangeListener)
+                    .setOnAudioFocusChangeListener(audioFocusChangeListener)
                     .setAudioAttributes(attrs)
                     .build();
             int result = audioManager.requestAudioFocus(audioFocusRequest);
             return (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
         } else {
-            int result = audioManager.requestAudioFocus(afChangeListener,
+            int result = audioManager.requestAudioFocus(audioFocusChangeListener,
                     AudioManager.STREAM_MUSIC,
                     AudioManager.AUDIOFOCUS_GAIN);
             return (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
@@ -348,75 +359,74 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
             audioManager.abandonAudioFocusRequest(audioFocusRequest);
             audioFocusRequest = null;
-            afChangeListener = null;
-        } else if (afChangeListener != null) {
-            audioManager.abandonAudioFocus(afChangeListener);
+            audioFocusChangeListener = null;
+        } else if (audioFocusChangeListener != null) {
+            audioManager.abandonAudioFocus(audioFocusChangeListener);
         }
     }
 
     private boolean startAudioRecord(int recordingDeviceId, int playbackDeviceId, boolean lowLatency) {
-        audioRecorder = new AudioRecorder(recordingDeviceId, playbackDeviceId, lowLatency, AUDIO_STREAM_BUFFER_SIZE);
-        return audioRecorder.start();
+        audioRecordStreamProvider = new AudioRecordStreamProvider(recordingDeviceId, playbackDeviceId, lowLatency, AUDIO_STREAM_BUFFER_SIZE);
+        return audioRecordStreamProvider.start();
     }
 
     private boolean stopAudioRecord() {
-        boolean success = audioRecorder.stop();
-        audioRecorder = null;
+        if (audioRecordStreamProvider == null) {
+            return true;
+        }
+        boolean success = audioRecordStreamProvider.stop();
+        audioRecordStreamProvider = null;
         return success;
     }
 
-    private InputStream startAudioConversion(InputStream rawAudioInputStream,
-                                             int convertedSampleRate,
-                                             int convertedChannelCount,
-                                             int audioBufferSize) {
-        InputStream convertedAudioInputStream;
+    private boolean startAudioConverter(AudioStreamProvider rawAudioStream, int audioBufferSize) {
         try {
-            ConvertAudioTask convertAudioTask =new ConvertAudioTask(
-                    rawAudioInputStream,
-                    convertedSampleRate,
-                    convertedChannelCount,
-                    audioBufferSize);
-            convertedAudioInputStream = convertAudioTask.getAudioInputStream();
-            convertAudioThread = new Thread(convertAudioTask, "ConvertAudio");
+            convertAudioStreamProvider = new ConvertAudioStreamProvider(rawAudioStream, audioBufferSize);
+            convertAudioThread = new Thread(convertAudioStreamProvider, "ConvertAudio");
             convertAudioThread.start();
+            return true;
         } catch (IOException e) {
             Log.e(TAG, "Exception starting audio record task.", e);
-            return null;
+            return false;
         }
-
-        return convertedAudioInputStream;
     }
 
-    private void stopAudioConversion() {
+    private boolean stopAudioConverter() {
         if (convertAudioThread != null) {
             convertAudioThread.interrupt();
             convertAudioThread = null;
+            convertAudioStreamProvider = null;
         }
+        return true;
     }
 
-    private void startHttpServer(InputStream audioStream, @AudioEncoding int audioEncoding) {
+    private boolean startHttpServer(AudioStreamProvider audioStreamProvider) {
         try {
             httpStreamServer = new HttpStreamServerImpl(
                     this,
                     HttpStreamServer.HTTP_SERVER_URL_PATH,
                     HttpStreamServer.HTTP_SERVER_PORT,
-                    audioEncoding,
-                    audioStream,
+                    audioStreamProvider.getAudioEncoding(),
+                    audioStreamProvider.getAudioInputStream(),
                     AUDIO_STREAM_BUFFER_SIZE);
             httpStreamServer.start();
+            return true;
         } catch (IOException e) {
             Log.e(TAG, "Exception creating webserver", e);
+            return false;
         }
     }
 
-    private void stopHttpServer() {
+    private boolean stopHttpServer() {
         if (httpStreamServer != null) {
             httpStreamServer.stop();
             httpStreamServer = null;
+            httpStreamProvider = null;
         }
+        return true;
     }
 
-    private void startAudioVisualizer(
+    private boolean startAudioVisualizer(
             final InputStream rawAudioInputStream,
             final int sampleRate,
             int fftLength,
@@ -429,27 +439,31 @@ public class VinylCastService extends MediaBrowserServiceCompat {
                 fftBins);
         audioVisualizer.setAudioVisualizerListener(mainActivity);
         audioVisualizer.start();
+        return true;
     }
 
-    private void stopAudioVisualizer() {
+    private boolean stopAudioVisualizer() {
         if (audioVisualizer != null) {
             audioVisualizer.stop();
             audioVisualizer = null;
         }
+        return false;
     }
 
-    private void startAudioRecognition() {
+    private boolean startAudioRecognition() {
         Intent startRecognitionIntent = new Intent();
         startRecognitionIntent.setClassName(this, "tech.schober.audioacr.AudioRecognitionService");
 
         startService(startRecognitionIntent);
+        return true;
     }
 
-    private void stopAudioRecognition() {
+    private boolean stopAudioRecognition() {
         Intent stopRecognitionIntent = new Intent();
         stopRecognitionIntent.setClassName(this, "tech.schober.audioacr.AudioRecognitionService");
 
         stopService(stopRecognitionIntent);
+        return false;
     }
 
     private void registerForBecomingNoisy() {
@@ -477,14 +491,14 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     }
 
     private void updateCastSession() {
-        if (castSessionManager.getCurrentCastSession() == null) {
+        if (((VinylCastApplication)getApplication()).getCastSessionManager().getCurrentCastSession() == null) {
             return;
         }
-        if (castSessionManager.getCurrentCastSession().getRemoteMediaClient() == null) {
+        if (((VinylCastApplication)getApplication()).getCastSessionManager().getCurrentCastSession().getRemoteMediaClient() == null) {
             return;
         }
 
-        RemoteMediaClient remoteMediaClient = castSessionManager.getCurrentCastSession().getRemoteMediaClient();
+        RemoteMediaClient remoteMediaClient = ((VinylCastApplication)getApplication()).getCastSessionManager().getCurrentCastSession().getRemoteMediaClient();
         if (isRecording()) {
             MediaMetadata audioMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK);
             String url = httpStreamServer.getStreamUrl();
@@ -531,14 +545,13 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         @Override
         public void onPlay() {
             Log.d(TAG, "MediaSessionCompat onPlay");
-            start();
+            engage();
         }
 
         @Override
         public void onStop() {
             Log.d(TAG, "MediaSessionCompat onStop");
-            unregisterReceiver(becomingNoisyReceiver);
-            stop();
+            disengage();
         }
     };
 
@@ -580,7 +593,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         public void onReceive(Context context, Intent intent) {
             if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
                 if (isPlaybackDeviceSelected() && isRecording()) {
-                    stop();
+                    disengage();
                 }
             }
         }

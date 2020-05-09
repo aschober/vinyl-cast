@@ -1,21 +1,16 @@
 package tech.schober.vinylcast.server;
 
 import android.content.Context;
-import android.os.Process;
+import android.net.TrafficStats;
 import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.StringDef;
 
-import tech.schober.vinylcast.VinylCastService;
-import tech.schober.vinylcast.utils.Helpers;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -24,9 +19,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import fi.iki.elonen.NanoHTTPD;
+import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.audio.AudioStreamProvider;
+import tech.schober.vinylcast.utils.Helpers;
 
-import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_AAC;
-import static tech.schober.vinylcast.VinylCastService.AUDIO_ENCODING_WAV;
+import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
+import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_WAV;
 
 /**
  * HTTP Server handling sending InputStream of data to connected clients.
@@ -54,7 +52,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     private HttpServerClients httpServerClients;
     private Thread readAudioThread;
 
-    public HttpStreamServerImpl(Context context, String serverUrlPath, int serverPort, @VinylCastService.AudioEncoding int audioEncoding, InputStream audioStream, int audioBufferSize) {
+    public HttpStreamServerImpl(Context context, String serverUrlPath, int serverPort, @AudioStreamProvider.AudioEncoding int audioEncoding, InputStream audioStream, int audioBufferSize) {
         super(serverPort);
         this.context = context;
         this.serverUrlPath = serverUrlPath;

@@ -55,6 +55,7 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     void setAudioDataListener(JNIEnv *env, jobject instance, jobject callback);
     int32_t getSampleRate();
     int32_t getChannelCount();
+    int32_t getBitRate();
     int32_t getAudioApi();
     const char * getOboeVersion();
 

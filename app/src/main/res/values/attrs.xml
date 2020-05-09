@@ -6,4 +6,10 @@
         <attr name="maxValue" format="float"/>
         <attr name="length" format="integer"/>
     </declare-styleable>
+
+    <declare-styleable name="PlayStopView">
+        <attr name="play_bg" format="color" />
+        <attr name="pause_bg" format="color" />
+        <attr name="fill_color" format="color" />
+    </declare-styleable>
 </resources>

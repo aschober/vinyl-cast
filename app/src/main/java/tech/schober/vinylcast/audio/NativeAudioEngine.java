@@ -20,6 +20,7 @@ public enum NativeAudioEngine {
     public static native void setAudioDataListener(NativeAudioEngineListener listener);
     public static native int getSampleRate();
     public static native int getChannelCount();
+    public static native int getBitRate();
     public static native int getAudioApi();
     public static native boolean prepareRecording();
     public static native boolean startRecording();
