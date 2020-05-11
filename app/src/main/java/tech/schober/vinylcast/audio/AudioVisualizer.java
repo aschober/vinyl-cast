@@ -7,6 +7,9 @@ import android.util.Log;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import github.bewantbe.audio_analyzer_for_android.STFT;
 
@@ -22,15 +25,14 @@ public class AudioVisualizer {
     private Thread audioVisualizerThread;
     private Handler audioVisualizerRenderHandler;
     private Runnable audioVisualizerRenderRunnable;
+    private List<AudioVisualizerListener> audioVisualizerListenersImmutable;
 
-    private AudioVisualizerListener listener;
-
-    public AudioVisualizer(InputStream audioInputStream, int audioBufferSize, int sampleRate, int fftLength, int fftBins) {
+    public AudioVisualizer(InputStream audioInputStream, int audioBufferSize, int sampleRate, int fftLength, int fftBins, CopyOnWriteArrayList audioVisualizerListeners) {
         this.audioInputStream = audioInputStream;
         this.audioBufferSize = audioBufferSize;
         this.fftBins = fftBins;
-
         this.stft = new STFT(fftLength, sampleRate, fftBins);
+        this.audioVisualizerListenersImmutable = Collections.unmodifiableList(audioVisualizerListeners);
     }
 
     public void start() {
@@ -55,10 +57,6 @@ public class AudioVisualizer {
             audioVisualizerRenderHandler = null;
             audioVisualizerRenderRunnable = null;
         }
-    }
-
-    public void setAudioVisualizerListener(AudioVisualizerListener listener) {
-        this.listener = listener;
     }
 
     public interface AudioVisualizerListener {
@@ -115,8 +113,11 @@ public class AudioVisualizer {
         public void run() {
             double[] spectrumAmpDB = stft.getSpectrumAmpDB();
             spectrumAmpDB = Arrays.copyOf(spectrumAmpDB, fftBins);
-            if (listener != null) {
-                listener.onAudioVisualizerData(spectrumAmpDB);
+
+            for (AudioVisualizerListener listener : audioVisualizerListenersImmutable) {
+                if (listener != null) {
+                    listener.onAudioVisualizerData(spectrumAmpDB);
+                }
             }
             audioVisualizerRenderHandler.postDelayed(audioVisualizerRenderRunnable, 66);
         }

@@ -61,11 +61,18 @@
         android:layout_marginTop="@dimen/activity_vertical_margin"
         android:layout_marginRight="@dimen/activity_horizontal_margin"
         android:layout_marginBottom="@dimen/activity_landscape_vertical_margin"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/metadataListing"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/playbackControls"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/recordContainer">
+
+        <FrameLayout
+            android:id="@+id/placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin" />
 
         <TextView
             android:id="@+id/statusText"
@@ -78,54 +85,6 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/metadataListing"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/playbackControls"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/statusContainer">
-
-        <ImageView
-            android:id="@+id/coverArtImage"
-            android:layout_width="75dip"
-            android:layout_height="75dip" />
-
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/trackTitle"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/albumName"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/artistName"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <LinearLayout
         android:id="@+id/playbackControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -135,7 +94,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/metadataListing">
+        app:layout_constraintTop_toBottomOf="@+id/statusContainer">
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -148,7 +107,7 @@
             app:cardElevation="8dp" >
 
             <tech.schober.vinylcast.ui.main.PlayStopView
-                android:id="@+id/play_pause_view"
+                android:id="@+id/play_stop_view"
                 android:layout_width="70dp"
                 android:layout_height="70dp"
                 android:layout_gravity="center"

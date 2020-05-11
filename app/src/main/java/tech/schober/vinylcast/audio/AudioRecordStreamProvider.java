@@ -12,7 +12,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import tech.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.utils.VinylCastHelpers;
 
 public class AudioRecordStreamProvider implements AudioStreamProvider {
 
@@ -91,7 +91,7 @@ public class AudioRecordStreamProvider implements AudioStreamProvider {
         Log.d(TAG, "getAudioInputStream");
         Pair<OutputStream, InputStream> audioStreams;
         try {
-            audioStreams = Helpers.getPipedAudioStreams(bufferSize);
+            audioStreams = VinylCastHelpers.getPipedAudioStreams(bufferSize);
         } catch (IOException e) {
             Log.e(TAG, "Exception creating audio stream", e);
             return null;

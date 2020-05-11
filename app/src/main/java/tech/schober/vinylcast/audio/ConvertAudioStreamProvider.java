@@ -15,7 +15,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import tech.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.utils.VinylCastHelpers;
 
 /**
  * Runnable used to convert raw PCM audio data from rawAudioInputStream to an AAC ADTS input stream.
@@ -51,7 +51,7 @@ public class ConvertAudioStreamProvider implements Runnable, AudioStreamProvider
         this.channelCount = rawAudioStream.getChannelCount();
         Log.d(TAG, "ConvertAudioTask - sampleRate: " + sampleRate +", channel count: " + channelCount);
 
-        Pair<OutputStream, InputStream> convertedAudioStreams = Helpers.getPipedAudioStreams(bufferSize);
+        Pair<OutputStream, InputStream> convertedAudioStreams = VinylCastHelpers.getPipedAudioStreams(bufferSize);
         this.convertedAudioWriteStream = convertedAudioStreams.first;
         this.convertedAudioReadStream = convertedAudioStreams.second;
     }

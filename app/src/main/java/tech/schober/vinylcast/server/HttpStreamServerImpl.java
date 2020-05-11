@@ -1,7 +1,6 @@
 package tech.schober.vinylcast.server;
 
 import android.content.Context;
-import android.net.TrafficStats;
 import android.util.Log;
 import android.util.Pair;
 
@@ -19,9 +18,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import fi.iki.elonen.NanoHTTPD;
-import tech.schober.vinylcast.VinylCastService;
 import tech.schober.vinylcast.audio.AudioStreamProvider;
-import tech.schober.vinylcast.utils.Helpers;
+import tech.schober.vinylcast.utils.VinylCastHelpers;
 
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_WAV;
@@ -84,7 +82,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         readAudioThread.start();
 
         // Set stream url and contentType
-        streamUrl = "http://" + Helpers.getIpAddress(context) + ":" + serverPort + serverUrlPath;
+        streamUrl = "http://" + VinylCastHelpers.getIpAddress(context) + ":" + serverPort + serverUrlPath;
         Log.d(TAG, "HTTP Server streaming at: " + streamUrl);
 
         // Notify listeners
@@ -195,7 +193,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         HttpClientImpl createHttpClient(String ipAddress, String hostname) {
             HttpClientImpl newClient;
             try {
-                Pair<OutputStream, InputStream> httpClientStreams = Helpers.getPipedAudioStreams(audioBufferSize);
+                Pair<OutputStream, InputStream> httpClientStreams = VinylCastHelpers.getPipedAudioStreams(audioBufferSize);
                 newClient = new HttpClientImpl(ipAddress, hostname, httpClientStreams.first, httpClientStreams.second);
                 if (contentType.equals(CONTENT_TYPE_WAV)) {
                     writeWAVHeaders(newClient.outputStream);

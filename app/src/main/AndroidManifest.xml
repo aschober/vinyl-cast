@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="tech.schober.vinylcast">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -14,7 +15,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:name=".VinylCastApplication"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:extractNativeLibs="true"
+        tools:replace="android:extractNativeLibs">
 
         <activity android:name=".ui.main.MainActivity">
             <!-- Launch activity as default from Android Studio -->

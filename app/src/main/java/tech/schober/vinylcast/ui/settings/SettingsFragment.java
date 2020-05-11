@@ -2,13 +2,14 @@ package tech.schober.vinylcast.ui.settings;
 
 import android.content.ComponentName;
 import android.content.ServiceConnection;
+import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
+import android.view.ViewGroup;
 
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
@@ -17,10 +18,15 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 
+import com.google.sample.audio_device.AudioDeviceListEntry;
 import com.google.sample.audio_device.AudioDevicePreference;
 
+import java.lang.reflect.Method;
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import tech.schober.vinylcast.BuildConfig;
 import tech.schober.vinylcast.R;
@@ -39,14 +45,15 @@ import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AA
 public class SettingsFragment extends PreferenceFragmentCompat implements ServiceConnection {
     private static final String TAG = "SettingsFragment";
 
+    private static final Set<Integer> RECORDING_DEVICES_BUILTIN = new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_BUILTIN_MIC));
+    private static final Set<Integer> PLAYBACK_DEVICES_BUILTIN = new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER));
+
     private VinylCastService.VinylCastBinder binder;
 
     private Preference.OnPreferenceClickListener disabledPreferenceClickListener = new Preference.OnPreferenceClickListener() {
         @Override
         public boolean onPreferenceClick(Preference preference) {
-            Log.d(TAG, "onPreferenceClick: " + preference.getKey());
-            boolean isRecording = (binder != null && binder.isRecording());
-            if (isRecording) {
+            if (binder != null && binder.isRecording()) {
                 new AlertDialog.Builder(getContext())
                         .setTitle(R.string.alert_recordinginprogress_title)
                         .setMessage(R.string.alert_recordinginprogress_message)
@@ -59,6 +66,45 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
                 return false;
             }
         }
+    };
+
+    private Preference.OnPreferenceChangeListener audioDeviceOnChangeListener = (preference, newValue) -> {
+        Log.d(TAG, "audioDeviceOnChangeListener: " + preference.getKey() + " - " + newValue);
+
+        AudioDevicePreference audioDevicePreference = (AudioDevicePreference) preference;
+        AudioDevicePreference recordingDevicePref = findPreference(R.string.prefs_key_recording_device_id);
+        AudioDevicePreference playbackDevicePref = findPreference(R.string.prefs_key_local_playback_device_id);
+
+        AudioDeviceListEntry recordingDevice = recordingDevicePref.getSelectedAudioDeviceListEntry();
+        AudioDeviceListEntry playbackDevice = playbackDevicePref.getSelectedAudioDeviceListEntry();
+
+        if (preference.getKey().equals(getString(R.string.prefs_key_recording_device_id))) {
+            recordingDevice = recordingDevicePref.getAudioDeviceListEntry(Integer.valueOf((String) newValue));
+        } else if (preference.getKey().equals(getString(R.string.prefs_key_local_playback_device_id))) {
+            playbackDevice = playbackDevicePref.getAudioDeviceListEntry(Integer.valueOf((String) newValue));
+        }
+
+        if (recordingDevice == null || playbackDevice == null ||
+                recordingDevice.getId() == AudioRecordStreamProvider.AUDIO_DEVICE_ID_AUTO_SELECT ||
+                playbackDevice.getId() == AudioRecordStreamProvider.AUDIO_DEVICE_ID_AUTO_SELECT ||
+                playbackDevice.getId() == AudioRecordStreamProvider.AUDIO_DEVICE_ID_NONE) {
+            return true;
+        }
+
+        if (RECORDING_DEVICES_BUILTIN.contains(recordingDevice.getType()) &&
+                (PLAYBACK_DEVICES_BUILTIN.contains(playbackDevice.getType()))) {
+            new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.alert_builtin_warning_title)
+                    .setMessage(R.string.alert_builtin_warning_message)
+                    // Specifying a listener allows you to take an action before dismissing the dialog.
+                    // The dialog is automatically dismissed when a dialog button is clicked.
+                    .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                        audioDevicePreference.setValue((String) newValue);
+                    })
+                    .setIcon(R.drawable.ic_warning_accent2_24dp)
+                    .show();
+        }
+        return true;
     };
 
     @Override
@@ -97,47 +143,50 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         if (recordingDevicePref != null) {
             recordingDevicePref.setDirectionType(AudioManager.GET_DEVICES_INPUTS);
             recordingDevicePref.setOnPreferenceClickListener(disabledPreferenceClickListener);
+            recordingDevicePref.setOnPreferenceChangeListener(audioDeviceOnChangeListener);
         }
         if (playbackDevicePref != null) {
             playbackDevicePref.setDirectionType(AudioManager.GET_DEVICES_OUTPUTS);
             playbackDevicePref.setOnPreferenceClickListener(disabledPreferenceClickListener);
+            playbackDevicePref.setOnPreferenceChangeListener(audioDeviceOnChangeListener);
         }
         if (lowLatencyPref != null) {
             lowLatencyPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
         if (audioEncodingPref != null) {
-            audioEncodingPref.setWidgetLayoutResource(R.layout.pref_widget_button);
             audioEncodingPref.setEntries(R.array.prefs_audio_encoding_entries);
             audioEncodingPref.setEntryValues(R.array.prefs_audio_encoding_entry_values);
             audioEncodingPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
         }
-        if (feedbackPref != null) {
-            feedbackPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                @Override
-                public boolean onPreferenceClick(Preference preference) {
-//                    if (binder != null) {
-//                        Instabug.setUserAttribute("Audio API", binder.getAudioApi());
-//                    }
-//                    Instabug.show();
-                    return true;
+        if (feedbackPref != null && BuildConfig.FLAVOR.equals("playstore")) {
+            feedbackPref.setVisible(true);
+            feedbackPref.setOnPreferenceClickListener(preference -> {
+                try {
+                    // Use reflection to get Instabug since only available in playstore product flavor
+                    Class instabugClazz = Class.forName("com.instabug.library.Instabug");
+                    if (binder != null) {
+                        //Instabug.setUserAttribute("Audio API", getAudioApiVersionString());
+                        Method setUserAttributeMethod = instabugClazz.getMethod("setUserAttribute", String.class, String.class);
+                        setUserAttributeMethod.invoke(null, "Audio API", getAudioApiVersionString());
+                    }
+                    //Instabug.show();
+                    Method showMethod = instabugClazz.getMethod("show");
+                    showMethod.invoke(null);
+                } catch (ReflectiveOperationException e) {
+                    e.printStackTrace();
                 }
+                return true;
             });
         }
         if (androidApiLevelPref != null) {
-            androidApiLevelPref.setSummaryProvider(new Preference.SummaryProvider<Preference>() {
-                @Override
-                public CharSequence provideSummary(Preference preference) {
-                    return Integer.toString(Build.VERSION.SDK_INT);
-                }
-            });
+            androidApiLevelPref.setSummaryProvider(preference ->
+                    Integer.toString(Build.VERSION.SDK_INT)
+            );
         }
         if (appVersionPref != null) {
-            appVersionPref.setSummaryProvider(new Preference.SummaryProvider<Preference>() {
-                @Override
-                public CharSequence provideSummary(Preference preference) {
-                    return String.format("%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
-                }
-            });
+            appVersionPref.setSummaryProvider(preference ->
+                    String.format(Locale.getDefault(), "%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+            );
         }
 
         // set initial state of dynamic preferences
@@ -181,31 +230,44 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         }
     }
 
+    public static void printViewHierarchy(ViewGroup vg, String prefix) {
+        for (int i = 0; i < vg.getChildCount(); i++) {
+            View v = vg.getChildAt(i);
+            String desc = prefix + " | " + "[" + i + "/" + (vg.getChildCount()-1) + "] "+ v.getClass().getSimpleName() + " " + v.getId();
+            Log.v(TAG, desc);
+
+            if (v instanceof ViewGroup) {
+                printViewHierarchy((ViewGroup)v, desc);
+            }
+        }
+    }
+
     class UpdateDynamicPrefsRunnable implements Runnable {
         @Override
         public void run() {
             // update audio and http server preferences on main thread
             boolean isRecording = (binder != null && binder.isRecording());
 
-            ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
+            InfoButtonListPreferencePref audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
             Preference httpServerPref = findPreference(R.string.prefs_key_http_server);
             Preference httpClientsPref = findPreference(R.string.prefs_key_http_clients);
             Preference audioApiPref = findPreference(R.string.prefs_key_audio_api);
 
-            if (getView() != null) {
-                ImageButton prefImageButton = getView().findViewById(R.id.pref_image_button);
-                if (isRecording) {
-                    prefImageButton.setVisibility(View.VISIBLE);
-                    prefImageButton.setOnClickListener(l -> {
-                        Log.d(TAG, "Pref Button pressed!");
-                        getAudioEncodingInfoDialog(Integer.valueOf(audioEncodingPref.getValue())).show();
-                    });
-                } else {
-                    prefImageButton.setVisibility(View.GONE);
-                    prefImageButton.setOnClickListener(null);
-                }
+            // handle audio encoding info button
+            if (isRecording) {
+                audioEncodingPref.setShowInfoButton(true);
+                audioEncodingPref.setImageButtonClickListener(listener ->
+                        getAudioEncodingInfoDialog(Integer.valueOf(audioEncodingPref.getValue())).show()
+                );
+            } else {
+                audioEncodingPref.setShowInfoButton(false);
+                audioEncodingPref.setImageButtonClickListener(null);
             }
+            // trigger refresh of fragment listview holding audioEncodingPref to make sure the info
+            // button gets redrawn with latest state
+            audioEncodingPref.notifyPreferenceListItemChanged(SettingsFragment.this);
 
+            // handle updating read-only pref summaries
             if (!isRecording) {
                 httpServerPref.setSummary(R.string.prefs_default_summary_http_server);
                 httpClientsPref.setSummary(R.string.prefs_default_summary_http_clients);
@@ -267,12 +329,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
                 sampleRateKhz = AudioRecordStreamProvider.getAudioRecordStreamSampleRate() / 1000f;
                 channelCount = AudioRecordStreamProvider.getAudioRecordStreamChannelCount();
                 bitRateKbps = AudioRecordStreamProvider.getAudioRecordStreamBitRate() / 1000f;
-                titleResId = R.string.alert_encodingdetails_aac_title;
+                titleResId = R.string.alert_encodingdetails_wav_title;
                 break;
         }
 
         String message = String.format(Locale.getDefault(),
-                "Sample Rate: %s kHz\nChannels: %d\nBit Rate: %s kbps",
+                "Sample Rate: %s kHz\nChannels: %d\nBitrate: %s kbps",
                 new DecimalFormat("#.#").format(sampleRateKhz),
                 channelCount,
                 new DecimalFormat("#.#").format(bitRateKbps));

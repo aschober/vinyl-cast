@@ -19,7 +19,7 @@
             app:defaultValue="@string/prefs_default_local_playback_device_id"
             app:useSimpleSummaryProvider="true" />
 
-        <tech.schober.vinylcast.ui.settings.CheckOnClickCheckboxPreference
+        <tech.schober.vinylcast.ui.settings.CheckOnPrefClickCheckboxPreference
             app:key="@string/prefs_key_low_latency"
             app:title="@string/prefs_title_low_latency"
             app:summary="@string/prefs_summary_low_latency"
@@ -33,7 +33,7 @@
         app:title="@string/prefs_title_category_audio_streaming"
         app:iconSpaceReserved="false" >
 
-        <tech.schober.vinylcast.ui.settings.CheckOnClickListPreference
+        <tech.schober.vinylcast.ui.settings.InfoButtonListPreferencePref
             app:key="@string/prefs_key_audio_encoding"
             app:title="@string/prefs_title_audio_encoding"
             app:defaultValue="@string/prefs_default_audio_encoding"
@@ -63,6 +63,7 @@
         app:iconSpaceReserved="false" >
 
         <Preference
+            app:isPreferenceVisible="false"
             app:key="@string/prefs_key_feedback"
             app:summary="@string/prefs_summary_feedback"
             app:title="@string/prefs_title_feedback"

@@ -33,7 +33,7 @@ import tech.schober.vinylcast.R;
 public class AudioDeviceAdapter extends ArrayAdapter<AudioDeviceListEntry> {
 
     public AudioDeviceAdapter(Context context) {
-        super(context, R.layout.audio_devices);
+        super(context, R.layout.adapter_audio_devices);
     }
 
     @NonNull
@@ -47,7 +47,7 @@ public class AudioDeviceAdapter extends ArrayAdapter<AudioDeviceListEntry> {
         View rowView = convertView;
         if (rowView == null) {
             LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            rowView = inflater.inflate(R.layout.audio_devices, parent, false);
+            rowView = inflater.inflate(R.layout.adapter_audio_devices, parent, false);
         }
 
         TextView deviceName = rowView.findViewById(R.id.device_name);

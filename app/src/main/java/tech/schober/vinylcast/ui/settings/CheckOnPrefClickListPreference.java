@@ -1,10 +1,13 @@
 package tech.schober.vinylcast.ui.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.AttributeSet;
 
+import androidx.core.content.res.TypedArrayUtils;
 import androidx.preference.ListPreference;
-import androidx.preference.PreferenceManager;
+
+import tech.schober.vinylcast.R;
 
 /**
  * Extension of ListPreference so we can check onPreferenceClick method before
@@ -12,27 +15,29 @@ import androidx.preference.PreferenceManager;
  * and do a different action instead of opening list dialog (e.g. show a different dialog saying
  * preference can't be modified when recording).
  *
- * Not sure why Android/AndroidX's ListPreference calls onClick (causing an action to occur)
+ * Not sure why Android/AndroidX's Preference calls onClick (causing an action to occur)
  * before checking onPreferenceClick...kinda defeats purpose of onPreferenceClick check.
  *
  * https://stackoverflow.com/a/32357583
  */
-public class CheckOnClickListPreference extends ListPreference {
+public class CheckOnPrefClickListPreference extends ListPreference {
 
-    public CheckOnClickListPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public CheckOnPrefClickListPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
 
-    public CheckOnClickListPreference(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
+    public CheckOnPrefClickListPreference(Context context, AttributeSet attrs, int defStyleAttr) {
+        this(context, attrs, defStyleAttr, 0);
     }
 
-    public CheckOnClickListPreference(Context context, AttributeSet attrs) {
-        super(context, attrs);
+    @SuppressLint("RestrictedApi")
+    public CheckOnPrefClickListPreference(Context context, AttributeSet attrs) {
+        this(context, attrs, TypedArrayUtils.getAttr(context, R.attr.dialogPreferenceStyle,
+                android.R.attr.dialogPreferenceStyle));
     }
 
-    public CheckOnClickListPreference(Context context) {
-        super(context);
+    public CheckOnPrefClickListPreference(Context context) {
+        this(context, null);
     }
 
     @Override

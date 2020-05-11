@@ -1,10 +1,12 @@
 <resources>
     <string name="app_name">Vinyl Cast</string>
 
+    <string name="module_audioacr_name">Audio Identification</string>
+
     <string name="media_route_menu_title">Cast</string>
 
-    <string name="stop">Stop</string>
-    <string name="ok">OK</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_ok">OK</string>
 
     <string name="status_preparing">Preparing...</string>
     <string name="status_ready">Ready</string>
@@ -14,24 +16,16 @@
 
     <string name="alert_permissions_title">Permission Required</string>
     <string name="alert_permissions_message">Permission to access the microphone is required for this app to record audio.</string>
-    <string name="alert_builtin_warning_title">Built-In Audio Devices Selected</string>
-    <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.\n\nAre you sure you want to continue?</string>
+    <string name="alert_builtin_warning_title">Built-In Devices Selected</string>
+    <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.</string>
     <string name="alert_recordinginprogress_title">Recording In-Progress</string>
     <string name="alert_recordinginprogress_message">You cannot change this setting while recording is in-progress.</string>
     <string name="alert_encodingdetails_wav_title">WAV Encoding Details</string>
     <string name="alert_encodingdetails_aac_title">AAC Encoding Details</string>
 
-    <string name="recording_device">Recording Device:</string>
-    <string name="playback_device">Local Playback Device:</string>
-    <string name="stream_encoding">Stream Encoding:</string>
-    <string name="stream_encoding_wav">WAV</string>
-    <string name="stream_encoding_aac">ADTS AAC</string>
-    <string name="status">Status:</string>
-
-    <string name="notification_content_text">Streaming Audio</string>
+    <string name="notification_content_title">Streaming Audio</string>
     <string name="notification_channel_name">Recording</string>
     <string name="menu_settings">Settings</string>
-    <string name="title_audio_acr">Audio Identification</string>
 
     <string name="audio_device_device_name">Device Name</string>
     <string name="audio_device_auto_select">Auto select</string>

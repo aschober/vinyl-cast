@@ -27,9 +27,9 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 
-import tech.schober.vinylcast.ui.main.MainActivity;
 import tech.schober.vinylcast.R;
 import tech.schober.vinylcast.VinylCastService;
+import tech.schober.vinylcast.ui.main.MainActivity;
 
 import static android.content.Context.WIFI_SERVICE;
 import static androidx.core.app.NotificationCompat.Action;
@@ -42,11 +42,16 @@ import static androidx.media.app.NotificationCompat.MediaStyle;
  * Created by Allen Schober on 3/26/17.
  */
 
-public class Helpers {
+public class VinylCastHelpers {
 
-    private Helpers(){}	// not to be instantiated
+    private VinylCastHelpers(){}	// not to be instantiated
 
-    public static void createStopNotification(MediaSessionCompat mediaSession, Service context, Class<?> serviceClass, String NOTIFICATION_CHANNEL_ID, int NOTIFICATION_ID) {
+    public static void createStopNotification(MediaSessionCompat mediaSession,
+                                              Service context,
+                                              Class<?> serviceClass,
+                                              String NOTIFICATION_CHANNEL_ID,
+                                              int NOTIFICATION_ID,
+                                              String httpStreamUrl) {
         createNotificationChannel(context, NOTIFICATION_CHANNEL_ID);
 
         PendingIntent stopIntent = PendingIntent.getService(context, 0, getServiceActionIntent(VinylCastService.ACTION_STOP_RECORDING, context, serviceClass), PendingIntent.FLAG_CANCEL_CURRENT);
@@ -56,8 +61,8 @@ public class Helpers {
         MediaMetadataCompat mediaMetadata = controller.getMetadata();
         MediaDescriptionCompat mediaDescription = mediaMetadata == null ? null : mediaMetadata.getDescription();
 
-        CharSequence contentTitle = mediaDescription == null ? null : mediaDescription.getTitle();
-        CharSequence contentText = mediaDescription == null ? context.getString(R.string.notification_content_text) : mediaDescription.getSubtitle();
+        CharSequence contentTitle = mediaDescription == null ? context.getString(R.string.notification_content_title) : mediaDescription.getTitle();
+        CharSequence contentText = mediaDescription == null ? httpStreamUrl : mediaDescription.getSubtitle();
         CharSequence subText = mediaDescription == null ? null : mediaDescription.getDescription();
         Bitmap largeIcon = mediaDescription == null ? null : mediaDescription.getIconBitmap();
 
@@ -73,7 +78,7 @@ public class Helpers {
                 .setShowWhen(false)
                 // Add a pause button
                 .addAction(new Action(
-                        R.drawable.ic_stop_black_24dp, context.getString(R.string.stop),
+                        R.drawable.ic_stop_black_24dp, context.getString(R.string.button_stop),
                         MediaButtonReceiver.buildMediaButtonPendingIntent(context,
                                 PlaybackStateCompat.ACTION_STOP)))
                 .setStyle(new MediaStyle()

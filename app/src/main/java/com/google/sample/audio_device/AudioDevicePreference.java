@@ -29,6 +29,7 @@ public class AudioDevicePreference extends ListPreference {
     private int mDirectionType;
     private Spinner mSpinner;
     private AudioManager mAudioManager;
+    private List<AudioDeviceListEntry> deviceList;
 
     private final AdapterView.OnItemSelectedListener mItemSelectedListener = new AdapterView.OnItemSelectedListener() {
         @Override
@@ -148,7 +149,7 @@ public class AudioDevicePreference extends ListPreference {
             @Override
             public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
 
-                List<AudioDeviceListEntry> deviceList =
+                deviceList =
                         AudioDeviceListEntry.createFilteredListFrom(addedDevices, mDirectionType, new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_TELEPHONY)));
                 if (deviceList.size() > 0){
                     mDeviceAdapter.addAll(deviceList);
@@ -161,7 +162,7 @@ public class AudioDevicePreference extends ListPreference {
 
             public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
 
-                List<AudioDeviceListEntry> deviceList =
+                deviceList =
                         AudioDeviceListEntry.createListFrom(removedDevices, mDirectionType);
                 for (AudioDeviceListEntry entry : deviceList){
                     Log.d(TAG, "audio device removed: [" + entry.getId() + "] " + entry.getName());
@@ -183,5 +184,21 @@ public class AudioDevicePreference extends ListPreference {
         setEntries(entries);
         setEntryValues(entryValues);
         notifyChanged();
+    }
+
+    public AudioDeviceListEntry getAudioDeviceListEntry(int deviceId) {
+        if (deviceList != null) {
+            return deviceList.stream().filter(device -> device.getId() == deviceId).findFirst().orElse(null);
+        } else {
+            return null;
+        }
+    }
+
+    public AudioDeviceListEntry getSelectedAudioDeviceListEntry() {
+        if (deviceList != null) {
+            return deviceList.stream().filter(device -> device.getId() == Integer.valueOf(getValue())).findFirst().orElse(null);
+        } else {
+            return null;
+        }
     }
 }
