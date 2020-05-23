@@ -68,8 +68,8 @@
     <string name="prefs_key_app_version">app_version</string>
 
     <string-array name="prefs_audio_encoding_entries">
-        <item>WAV <small>(more network traffic)</small></item>
-        <item>AAC <small>(less network traffic)</small></item>
+        <item>WAV <small>(lossless, ~1.8Mb/s)</small></item>
+        <item>AAC <small>(lossy, ~250Kb/s)</small></item>
     </string-array>
 
     <string-array name="prefs_audio_encoding_entry_values">

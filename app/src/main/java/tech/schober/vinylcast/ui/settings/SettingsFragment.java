@@ -316,6 +316,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         float sampleRateKhz;
         int channelCount;
         float bitRateKbps;
+        int bufferAudioDelay;
         int titleResId;
 
         switch (audioEncoding) {
@@ -323,21 +324,24 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
                 sampleRateKhz = ConvertAudioStreamProvider.getConvertAudioStreamSampleRate() / 1000f;
                 channelCount = ConvertAudioStreamProvider.getConvertAudioStreamChannelCount();
                 bitRateKbps = ConvertAudioStreamProvider.getConvertAudioStreamBitRate() / 1000f;
+                bufferAudioDelay = 20;
                 titleResId = R.string.alert_encodingdetails_aac_title;
                 break;
             default:
                 sampleRateKhz = AudioRecordStreamProvider.getAudioRecordStreamSampleRate() / 1000f;
                 channelCount = AudioRecordStreamProvider.getAudioRecordStreamChannelCount();
                 bitRateKbps = AudioRecordStreamProvider.getAudioRecordStreamBitRate() / 1000f;
+                bufferAudioDelay = 10;
                 titleResId = R.string.alert_encodingdetails_wav_title;
                 break;
         }
 
         String message = String.format(Locale.getDefault(),
-                "Sample Rate: %s kHz\nChannels: %d\nBitrate: %s kbps",
+                "Sample Rate: %s kHz\nChannels: %d\nBitrate: %s kbps\n\nNote: ~%dsecs audio delay due to player buffering on Cast device.",
                 new DecimalFormat("#.#").format(sampleRateKhz),
                 channelCount,
-                new DecimalFormat("#.#").format(bitRateKbps));
+                new DecimalFormat("#.#").format(bitRateKbps),
+                bufferAudioDelay);
 
         return new AlertDialog.Builder(getContext())
                 .setTitle(titleResId)
