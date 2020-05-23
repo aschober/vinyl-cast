@@ -16,6 +16,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
@@ -31,6 +32,8 @@ import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -57,8 +60,23 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private static final int AUDIO_VISUALIZER_FFT_LENGTH = 256;
     private static final int AUDIO_VISUALIZER_FFT_BINS = 16;
 
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({STATUS_PREPARING, STATUS_READY, STATUS_RECORDING, STATUS_STOPPED, STATUS_ERROR_UNKNOWN, STATUS_ERROR_PERMISSION_DENIED, STATUS_ERROR_AUDIO_FOCUS_FAILED, STATUS_ERROR_AUDIO_RECORD_FAILED, STATUS_ERROR_AUDIO_CONVERT_FAILED, STATUS_ERROR_HTTP_SERVER_FAILED})
+    public @interface StatusCode {}
+    public static final int STATUS_PREPARING = 0;
+    public static final int STATUS_READY = 1;
+    public static final int STATUS_RECORDING = 2;
+    public static final int STATUS_STOPPED = 3;
+    public static final int STATUS_ERROR_UNKNOWN = 100;
+    public static final int STATUS_ERROR_PERMISSION_DENIED = 101;
+    public static final int STATUS_ERROR_AUDIO_FOCUS_FAILED = 102;
+    public static final int STATUS_ERROR_AUDIO_RECORD_FAILED = 103;
+    public static final int STATUS_ERROR_AUDIO_CONVERT_FAILED = 104;
+    public static final int STATUS_ERROR_HTTP_SERVER_FAILED = 105;
+
     private final IBinder binder = new VinylCastBinder();
     private CopyOnWriteArrayList<VinylCastServiceListener> vinylCastServiceListeners = new CopyOnWriteArrayList<>();
+    private Integer lastStatusCode = null;
 
     private AudioRecordStreamProvider audioRecordStreamProvider;
 
@@ -79,7 +97,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private IntentFilter becomingNoisyIntentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
     public interface VinylCastServiceListener {
-        void onStatusUpdate(boolean isRecording, String statusMessage);
+        void onStatusUpdate(@StatusCode int statusCode);
     }
 
     /**
@@ -94,7 +112,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         public void addVinylCastServiceListener(VinylCastServiceListener listener) {
             vinylCastServiceListeners.add(listener);
             // make sure to send updated state to newly added listener
-            updateStatus();
+            resendStatus();
         }
 
         public void removeVinylCastServiceListener(VinylCastServiceListener listener) {
@@ -114,7 +132,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
 
         public void stop() {
-            VinylCastService.this.disengage();
+            VinylCastService.this.disengage(false);
         }
 
         public int getRecorderSampleRate() {
@@ -163,7 +181,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         Log.d(TAG, "onCreate");
         super.onCreate();
         registerMediaSession();
+        updateStatus(STATUS_READY);
     }
+
 
 
     @Override
@@ -217,7 +237,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
                 engage();
                 break;
             case VinylCastService.ACTION_STOP_RECORDING:
-                disengage();
+                disengage(false);
                 break;
             default:
                 MediaButtonReceiver.handleIntent(mediaSession, intent);
@@ -238,15 +258,15 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         if (isPlaybackDeviceSelected() && !requestAudioFocus()) {
             Log.e(TAG, "Failed to get Audio Focus for playback. Stopping VinylCastService...");
-            // TODO Error!
-            disengage();
+            updateStatus(STATUS_ERROR_AUDIO_FOCUS_FAILED);
+            disengage(true);
             return;
         }
 
         if (!startAudioRecord(recordingDeviceId, playbackDeviceId, lowLatency)) {
             Log.e(TAG, "Failed to start Audio Record. Stopping VinylCastService...");
-            // TODO Error!
-            disengage();
+            updateStatus(STATUS_ERROR_AUDIO_RECORD_FAILED);
+            disengage(true);
             return;
         }
 
@@ -254,8 +274,8 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             case AUDIO_ENCODING_AAC:
                 if (!startAudioConverter(audioRecordStreamProvider, AUDIO_STREAM_BUFFER_SIZE)) {
                     Log.e(TAG, "Failed to start Audio Converter. Stopping VinylCastService...");
-                    // TODO Error!
-                    disengage();
+                    updateStatus(STATUS_ERROR_AUDIO_CONVERT_FAILED);
+                    disengage(true);
                     return;
                 }
                 httpStreamProvider = convertAudioStreamProvider;
@@ -267,8 +287,8 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         if (!startHttpServer(httpStreamProvider)) {
             Log.e(TAG, "Failed to start HTTP Server. Stopping VinylCastService...");
-            // TODO Error!
-            disengage();
+            updateStatus(STATUS_ERROR_HTTP_SERVER_FAILED);
+            disengage(true);
             return;
         }
 
@@ -292,11 +312,11 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         registerForBecomingNoisy();
 
         updateMediaSession();
-        updateStatus();
+        updateStatus(STATUS_RECORDING);
         updateCastSession();
     }
 
-    private void disengage() {
+    private void disengage(boolean fromError) {
         Log.i(TAG, "disengage");
         unregisterForBecomingNoisy();
         abandonAudioFocus();
@@ -310,7 +330,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         stopForeground(true);
 
         updateMediaSession();
-        updateStatus();
+        if (!fromError) {
+            updateStatus(STATUS_STOPPED);
+        }
         updateCastSession();
     }
 
@@ -329,7 +351,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_LOSS:
                     Log.d(TAG, "Lost Audio Focus. stopping...");
-                    disengage();
+                    disengage(false);
                     break;
 
             }
@@ -516,13 +538,16 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
     }
 
-    private void updateStatus() {
+    private void updateStatus(@StatusCode int statusCode) {
         for (VinylCastServiceListener listener : vinylCastServiceListeners) {
-            if (isRecording()) {
-                listener.onStatusUpdate(isRecording(), getString(R.string.status_recording) + "\n" + httpStreamServer.getStreamUrl());
-            } else {
-                listener.onStatusUpdate(isRecording(), getString(R.string.status_ready));
-            }
+            listener.onStatusUpdate(statusCode);
+        }
+        lastStatusCode = statusCode;
+    }
+
+    private void resendStatus() {
+        if (lastStatusCode != null) {
+            updateStatus(lastStatusCode);
         }
     }
 
@@ -550,7 +575,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         @Override
         public void onStop() {
             Log.d(TAG, "MediaSessionCompat onStop");
-            disengage();
+            disengage(false);
         }
     };
 
@@ -592,7 +617,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         public void onReceive(Context context, Intent intent) {
             if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
                 if (isPlaybackDeviceSelected() && isRecording()) {
-                    disengage();
+                    disengage(false);
                 }
             }
         }

@@ -8,11 +8,16 @@
     <string name="button_stop">Stop</string>
     <string name="button_ok">OK</string>
 
-    <string name="status_preparing">Preparing...</string>
+    <string name="status_preparing">Preparing…</string>
     <string name="status_ready">Ready</string>
-    <string name="status_recording">Streaming audio at</string>
+    <string name="status_recording">Streaming audio at </string>
     <string name="status_stopped">Stopped</string>
-    <string name="status_record_audio_denied">Error - RECORD_AUDIO permission was denied</string>
+    <string name="status_error_unknown">Error: an unknown error occurred</string>
+    <string name="status_error_record_audio_denied">Error: RECORD_AUDIO permission was denied</string>
+    <string name="status_error_audio_focus_failed">Error: Failed to get audio focus</string>
+    <string name="status_error_audio_record_failed">Error: Failed to start audio recording</string>
+    <string name="status_error_audio_convert_failed">Error: Failed to start audio converter</string>
+    <string name="status_error_http_server_failed">Error: Failed to start HTTP server</string>
 
     <string name="alert_permissions_title">Permission Required</string>
     <string name="alert_permissions_message">Permission to access the microphone is required for this app to record audio.</string>

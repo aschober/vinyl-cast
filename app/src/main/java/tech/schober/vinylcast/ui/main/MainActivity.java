@@ -3,10 +3,8 @@ package tech.schober.vinylcast.ui.main;
 import android.Manifest;
 import android.animation.ObjectAnimator;
 import android.content.ComponentName;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.AudioDeviceInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -24,22 +22,26 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.mediarouter.app.MediaRouteChooserDialogFragment;
 import androidx.mediarouter.app.MediaRouteDialogFactory;
-import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.cast.framework.CastContext;
-import com.google.sample.audio_device.AudioDeviceListEntry;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import tech.schober.vinylcast.R;
 import tech.schober.vinylcast.VinylCastService;
 import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.ui.VinylCastActivity;
 import tech.schober.vinylcast.ui.settings.SettingsActivity;
-import tech.schober.vinylcast.utils.VinylCastHelpers;
+
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_AUDIO_CONVERT_FAILED;
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_AUDIO_FOCUS_FAILED;
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_AUDIO_RECORD_FAILED;
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_HTTP_SERVER_FAILED;
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_PERMISSION_DENIED;
+import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_UNKNOWN;
+import static tech.schober.vinylcast.VinylCastService.STATUS_PREPARING;
+import static tech.schober.vinylcast.VinylCastService.STATUS_READY;
+import static tech.schober.vinylcast.VinylCastService.STATUS_RECORDING;
+import static tech.schober.vinylcast.VinylCastService.STATUS_STOPPED;
 
 public class MainActivity extends VinylCastActivity implements VinylCastService.VinylCastServiceListener, AudioVisualizer.AudioVisualizerListener {
     private static final String TAG = "MainActivity";
@@ -125,14 +127,14 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
 
     protected void bindVinylCastService() {
         if (!isServiceBound()) {
-            setStatusView(getString(R.string.status_preparing), true);
+            onStatusUpdate(STATUS_PREPARING);
         }
         super.bindVinylCastService();
     }
 
     protected void unbindVinylCastService() {
         if (isServiceBound()) {
-            setStatusView(getString(R.string.status_stopped), true);
+            onStatusUpdate(STATUS_STOPPED);
         }
         super.unbindVinylCastService();
     }
@@ -197,7 +199,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
             case RECORD_REQUEST_CODE: {
                 if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "Permission has been denied by user");
-                    setStatusView(getString(R.string.status_record_audio_denied), true);
+                    onStatusUpdate(STATUS_ERROR_PERMISSION_DENIED);
                 } else {
                     Log.i(TAG, "Permission has been granted by user");
                     startRecordingButtonClicked();
@@ -247,7 +249,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
                 recordingButtonAnimator.start();
             }
             // looks better if we go back in time a bit
-            recordingButtonAnimator.setCurrentPlayTime(recordingButtonAnimator.getCurrentPlayTime()-500);
+            recordingButtonAnimator.setCurrentPlayTime(recordingButtonAnimator.getCurrentPlayTime()-300);
             recordingButtonAnimator.resume();
         } else {
             if (recordingButtonAnimator != null) {
@@ -266,9 +268,46 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
     }
 
     @Override
-    public void onStatusUpdate(boolean isRecording, String statusMessage) {
+    public void onStatusUpdate(@VinylCastService.StatusCode int statusCode) {
+        boolean isRecording = false;
+        String statusMessage;
+        switch (statusCode) {
+            case STATUS_PREPARING:
+                statusMessage = getString(R.string.status_preparing);
+                break;
+            case STATUS_READY:
+                statusMessage = getString(R.string.status_ready);
+                break;
+            case STATUS_RECORDING:
+                isRecording = true;
+                statusMessage = getString(R.string.status_recording) + "\n" + binder.getHttpStreamServer().getStreamUrl();
+                break;
+            case STATUS_STOPPED:
+                statusMessage = getString(R.string.status_stopped);
+                break;
+            case STATUS_ERROR_PERMISSION_DENIED:
+                statusMessage = getString(R.string.status_error_record_audio_denied);
+                break;
+            case STATUS_ERROR_AUDIO_FOCUS_FAILED:
+                statusMessage = getString(R.string.status_error_audio_focus_failed);
+                break;
+            case STATUS_ERROR_AUDIO_RECORD_FAILED:
+                statusMessage = getString(R.string.status_error_audio_record_failed);
+                break;
+            case STATUS_ERROR_AUDIO_CONVERT_FAILED:
+                statusMessage = getString(R.string.status_error_audio_convert_failed);
+                break;
+            case STATUS_ERROR_HTTP_SERVER_FAILED:
+                statusMessage = getString(R.string.status_error_http_server_failed);
+                break;
+            case STATUS_ERROR_UNKNOWN:
+            default:
+                statusMessage = getString(R.string.status_error_unknown);
+                break;
+        }
+
         updateRecordingState(isRecording);
-        setStatusView(statusMessage, true);
+        runOnUiThread(new UpdateStatusRunnable(statusMessage));
     }
 
     /**
@@ -287,29 +326,19 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
     }
 
     /**
-     *  helper to set the status message
+     *  helper to set the status message on main thread
      */
-    private void setStatusView(String statusMessage, boolean clearStatus) {
-        runOnUiThread(new UpdateStatusRunnable(statusMessage, clearStatus));
-    }
-
     class UpdateStatusRunnable implements Runnable {
         String status;
-        boolean clearStatus;
 
-        UpdateStatusRunnable(String status, boolean clearStatus) {
+        UpdateStatusRunnable(String status) {
             this.status = status;
-            this.clearStatus = clearStatus;
         }
 
         @Override
         public void run() {
             statusText.setVisibility(View.VISIBLE);
-            if (clearStatus) {
-                statusText.setText(status);
-            } else {
-                statusText.setText(statusText.getText() + "\n" + status);
-            }
+            statusText.setText(status);
         }
     }
 }
