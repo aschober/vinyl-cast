@@ -48,5 +48,5 @@ target_link_libraries(vinylCast
 
 # Enable optimization flags: if having problems with source level debugging,
 # disable -Ofast ( and debug ), re-enable it after done debugging.
-target_compile_options(vinylCast PRIVATE -Wall -Werror "$<$<CONFIG:RELEASE>:-Ofast>")
+target_compile_options(vinylCast PRIVATE -Wall -Werror -Wno-unused-variable "$<$<CONFIG:RELEASE>:-Ofast>")
 
