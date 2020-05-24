@@ -1,10 +1,12 @@
-<img src="https://cloud.githubusercontent.com/assets/3988421/25033468/8d0ed758-20a3-11e7-8dc9-c141ceaeb3a6.png" width="100">
+<img align="left" width="120" height="120" src="https://cloud.githubusercontent.com/assets/3988421/25033468/8d0ed758-20a3-11e7-8dc9-c141ceaeb3a6.png">
 
 # Vinyl Cast
 
 **Listen to vinyl records wirelessly throughout your home.**
 
-Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player to any Google Cast-enabled (Chromecast built-in) devices or groups.
+<br>
+
+Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player (or any audio source for that matter) to Google Cast-enabled (Chromecast built-in) devices or groups.
 
 The Vinyl Cast App makes use of Android's USB audio peripheral support, audio recorder, media codecs, Google Oboe libary, media APIs, and Cast API to stream the audio from a connected audio source to Cast-enabled devices.
 
@@ -15,8 +17,11 @@ Note: The initial release of Vinyl Cast included using Audio ACR to detect the s
 #### Simple UI: Tap the record or play button to start streaming
 
 The record in the app spins when actively streaming.
-
-<img src="https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png" width="200">
+<p float="left">
+  <img src="https://user-images.githubusercontent.com/3988421/82761785-aa06a580-9dc2-11ea-8de4-c0425a5e30fe.png" width="200">
+  <img src="https://user-images.githubusercontent.com/3988421/82761783-a83ce200-9dc2-11ea-9dbf-4a3e22496cf8.png" width="200">
+  <img src="https://user-images.githubusercontent.com/3988421/82761782-a70bb500-9dc2-11ea-930f-b05e1405eca7.png" width="200">
+</p>
 
 # Required Hardware
 
@@ -54,6 +59,12 @@ The app was developed and tested using a Google Home, Chromecast Audio, and Chro
 # Setup Hardware
 
 The hardware should be set up as expected with the goal of recording audio from audio source via the Android device and wirelessly transmitting the audio to a Cast-enabled device.
+
+| Hardware Setup Flow Chart      |
+| :---: |
+| Android Device :point_right: USB OTG Adapter :point_right: USB Audio Device :point_right: Audio Source |
+| :satellite: |
+| Cast-Enabled Device :point_right: Speakers |
 
 **Android Device -> USB OTG Adapter -> USB Audio Device -> Audio Source**<br>
 :arrow_down:<br>
