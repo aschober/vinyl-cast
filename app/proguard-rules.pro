@@ -15,3 +15,8 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# Note: the onAudioData method name is hardcoded in NativeAudioEngine.cpp so need to tell ProGuard to skip it
+-keep public interface tech.schober.vinylcast.audio.NativeAudioEngineListener {
+     void onAudioData(byte[]);
+}

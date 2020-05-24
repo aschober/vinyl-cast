@@ -81,6 +81,7 @@ void NativeAudioEngine::setAudioDataListener(JNIEnv *env, jobject instance, jobj
     jclass jClassAudioDataListener = env->GetObjectClass(callbackObject);
 
     //declare java method id
+    //Note: this method name is hardcoded so need to tell ProGuard to skip it
     jmethodID jMethodIdOnAudioData = env->GetMethodID(jClassAudioDataListener, "onAudioData", "([B)V");
 
     //check null
