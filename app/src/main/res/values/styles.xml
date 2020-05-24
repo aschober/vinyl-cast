@@ -2,10 +2,44 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="actionBarTheme">@style/AppTheme.ActionBarThemeOverlay</item>
+
+        <item name="dialogTheme">@style/AppTheme.DialogOverlay</item>
+        <item name="alertDialogTheme">@style/AppTheme.AlertDialogOverlay</item>
+        <item name="android:dialogTheme">@style/AppTheme.DialogOverlay</item>
+        <item name="android:alertDialogTheme">@style/AppTheme.AlertDialogOverlay</item>
+
+        <!--<item name="android:textViewStyle">@style/AppTheme.TextViewStyle</item>-->
     </style>
+
+    <style name="AppTheme.ActionBarThemeOverlay" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="fontFamily">@font/ibm_plex_sans_semibold</item>
+    </style>
+
+    <style name="AppTheme.DialogOverlay" parent="@style/ThemeOverlay.AppCompat.Dialog">
+        <item name="android:windowTitleStyle">@style/AppTheme.DialogOverlay.DialogWindowTitle</item>
+        <!--<item name="fontFamily">@font/ibm_plex_sans</item>-->
+    </style>
+
+    <style name="AppTheme.AlertDialogOverlay" parent="@style/ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowTitleStyle">@style/AppTheme.DialogOverlay.DialogWindowTitle</item>
+        <!--<item name="fontFamily">@font/ibm_plex_sans</item>-->
+    </style>
+
+    <style name="AppTheme.DialogOverlay.DialogWindowTitle" parent="@style/Base.DialogWindowTitle.AppCompat">
+        <item name="android:textAppearance">@style/AppTheme.DialogWindowTitle.TextAppearance</item>
+    </style>
+
+    <style name="AppTheme.DialogWindowTitle.TextAppearance" parent="@style/TextAppearance.AppCompat.Title">
+        <item name="fontFamily">@font/ibm_plex_sans_medium</item>
+    </style>
+
+    <!--<style name="AppTheme.TextViewStyle" parent="android:Widget.TextView">-->
+        <!--<item name="android:fontFamily">@font/ibm_plex_sans</item>-->
+    <!--</style>-->
 
 </resources>

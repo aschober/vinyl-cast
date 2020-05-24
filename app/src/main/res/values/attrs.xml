@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="BarGraphView">
+        <attr name="color"/>
+        <attr name="minValue" format="float"/>
+        <attr name="maxValue" format="float"/>
+        <attr name="length" format="integer"/>
+    </declare-styleable>
+
+    <declare-styleable name="PlayStopView">
+        <attr name="play_bg" format="color" />
+        <attr name="pause_bg" format="color" />
+        <attr name="fill_color" format="color" />
+    </declare-styleable>
+</resources>

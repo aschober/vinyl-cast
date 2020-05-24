@@ -7,13 +7,13 @@ buildscript {
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
-        applicationId "com.schober.vinylcast"
-        minSdkVersion 23
-        targetSdkVersion 28
-        versionCode 1
-        versionName "1.0.0"
+        applicationId 'tech.schober.vinylcast'
+        minSdkVersion 25
+        targetSdkVersion 29
+        versionCode 2
+        versionName "1.1.0"
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
@@ -25,9 +25,27 @@ android {
         }
     }
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    flavorDimensions "destination"
+    productFlavors {
+        github {
+            dimension "destination"
+            applicationId 'tech.schober.vinylcast.github'
+            versionNameSuffix "-github"
+        }
+        playstore {
+            dimension "destination"
+            applicationId 'tech.schober.vinylcast.playstore'
+            versionNameSuffix "-playstore"
+            dynamicFeatures = [":audio_acr"]
         }
     }
     externalNativeBuild {
@@ -35,20 +53,35 @@ android {
             path 'src/main/cpp/CMakeLists.txt'
         }
     }
-    productFlavors {
+
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
     }
+    buildToolsVersion = '29.0.3'
 }
 
 dependencies {
-    implementation project(':audio-device')
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    testImplementation 'junit:junit:4.12'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation "androidx.cardview:cardview:1.0.0"
+    implementation 'androidx.preference:preference:1.1.1'
     implementation 'androidx.mediarouter:mediarouter:1.1.0'
     implementation 'com.google.android.gms:play-services-cast-framework:18.1.0'
     // HTTP Server
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
-    // Apache Commons IO
-    implementation 'commons-io:commons-io:2.5'
+    // Apache Commons IO for additional InputStream methods
+    implementation 'commons-io:commons-io:2.6'
+
+    /*
+     * product flavor: playstore
+     */
+    playstoreApi 'com.google.android.play:core:1.7.2'
+    playstoreImplementation 'com.instabug.library:instabug:9.1.4'
+
+    /*
+     * Test
+     */
+    testImplementation 'junit:junit:4.12'
 }

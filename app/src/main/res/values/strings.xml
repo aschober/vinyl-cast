@@ -1,31 +1,89 @@
 <resources>
     <string name="app_name">Vinyl Cast</string>
 
+    <string name="module_audioacr_name">Audio Identification</string>
+
     <string name="media_route_menu_title">Cast</string>
 
-    <string name="stop">Stop</string>
-    <string name="ok">OK</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_ok">OK</string>
 
-    <string name="status_preparing">Preparing...</string>
+    <string name="status_preparing">Preparing…</string>
     <string name="status_ready">Ready</string>
-    <string name="status_recording">Streaming audio at</string>
+    <string name="status_recording">Streaming audio at </string>
     <string name="status_stopped">Stopped</string>
-    <string name="status_record_audio_denied">Error - RECORD_AUDIO permission was denied</string>
+    <string name="status_error_unknown">Error: an unknown error occurred</string>
+    <string name="status_error_record_audio_denied">Error: RECORD_AUDIO permission was denied</string>
+    <string name="status_error_audio_focus_failed">Error: Failed to get audio focus</string>
+    <string name="status_error_audio_record_failed">Error: Failed to start audio recording</string>
+    <string name="status_error_audio_convert_failed">Error: Failed to start audio converter</string>
+    <string name="status_error_http_server_failed">Error: Failed to start HTTP server</string>
 
     <string name="alert_permissions_title">Permission Required</string>
     <string name="alert_permissions_message">Permission to access the microphone is required for this app to record audio.</string>
+    <string name="alert_builtin_warning_title">Built-In Devices Selected</string>
+    <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.</string>
+    <string name="alert_recordinginprogress_title">Recording In-Progress</string>
+    <string name="alert_recordinginprogress_message">You cannot change this setting while recording is in-progress.</string>
+    <string name="alert_encodingdetails_wav_title">WAV Encoding Details</string>
+    <string name="alert_encodingdetails_aac_title">AAC Encoding Details</string>
 
-    <string name="alert_builtin_warning_title">Built-In Audio Devices Selected</string>
-    <string name="alert_builtin_warning_message">Using built-in audio devices for recording and playback may cause a feedback loop which will not be pleasant to listen to.\n\nAre you sure you want to continue?</string>
-
-    <string name="recording_device">Recording Device:</string>
-    <string name="playback_device">Local Playback Device:</string>
-    <string name="stream_encoding">Stream Encoding:</string>
-    <string name="stream_encoding_wav">WAV</string>
-    <string name="stream_encoding_aac">ADTS AAC</string>
-    <string name="status">Status:</string>
-
-    <string name="notification_content_text">Streaming Audio</string>
+    <string name="notification_content_title">Streaming Audio</string>
     <string name="notification_channel_name">Recording</string>
+    <string name="menu_settings">Settings</string>
+
+    <string name="audio_device_device_name">Device Name</string>
+    <string name="audio_device_auto_select">Auto select</string>
+    <string name="audio_device_none">None</string>
+
+    <string name="prefs_title_category_audio_devices">Audio Devices</string>
+    <string name="prefs_title_recording_device">Recording Device</string>
+    <string name="prefs_title_local_playback_device">Local Playback Device</string>
+    <string name="prefs_title_low_latency">Low Latency Playback</string>
+    <string name="prefs_title_audio_api">Audio API</string>
+    <string name="prefs_title_category_audio_streaming">Audio Streaming</string>
+    <string name="prefs_title_audio_encoding">Audio Encoding</string>
+    <string name="prefs_title_http_server">HTTP Server Address</string>
+    <string name="prefs_title_http_clients">HTTP Clients Connected</string>
+    <string name="prefs_title_category_about">About</string>
+    <string name="prefs_title_feedback">Send Feedback</string>
+    <string name="prefs_title_android_api_level">Android API</string>
+    <string name="prefs_title_app_version">App Version</string>
+
+    <string name="prefs_summary_low_latency"><small>Advanced: Not all devices supported</small></string>
+    <string name="prefs_summary_feedback">Report technical issues or suggest new features</string>
+
+    <string name="prefs_key_category_audio_devices">category_audio_devices</string>
+    <string name="prefs_key_recording_device_id">recording_device</string>
+    <string name="prefs_key_local_playback_device_id">local_playback_device</string>
+    <string name="prefs_key_low_latency">low_latency</string>
+    <string name="prefs_key_audio_api">audio_api</string>
+    <string name="prefs_key_category_audio_streaming">category_audio_streaming</string>
+    <string name="prefs_key_audio_encoding">audio_encoding</string>
+    <string name="prefs_key_http_server">http_server</string>
+    <string name="prefs_key_http_clients">http_clients</string>
+    <string name="prefs_key_category_about">category_about</string>
+    <string name="prefs_key_feedback">feedback</string>
+    <string name="prefs_key_android_api_level">android_api_level</string>
+    <string name="prefs_key_app_version">app_version</string>
+
+    <string-array name="prefs_audio_encoding_entries">
+        <item>WAV <small>(lossless, ~1.8Mb/s)</small></item>
+        <item>AAC <small>(lossy, ~250Kb/s)</small></item>
+    </string-array>
+
+    <string-array name="prefs_audio_encoding_entry_values">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+
+    <string name="prefs_default_low_latency">false</string>
+    <string name="prefs_default_audio_encoding">0</string>
+    <string name="prefs_default_recording_device_id">0</string>
+    <string name="prefs_default_local_playback_device_id">-1</string>
+
+    <string name="prefs_default_summary_http_server">[not running]</string>
+    <string name="prefs_default_summary_http_clients">-</string>
+    <string name="prefs_default_summary_audio_api">-</string>
 
 </resources>

@@ -12,6 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Based on LiveEffectEngine.h
+ * https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/LiveEffectEngine.h
+ *
+ * Modifications Copyright 2020 Allen Schober
+ *
  */
 
 #ifndef OBOE_NATIVEAUDIOENGINE_H
@@ -21,58 +27,55 @@
 #include <oboe/Oboe.h>
 #include <string>
 #include <thread>
+#include "FullDuplexPassthru.h"
 
 class NativeAudioEngine : public oboe::AudioStreamCallback {
    public:
-    NativeAudioEngine();
+    NativeAudioEngine(JNIEnv* env);
     ~NativeAudioEngine();
     void setRecordingDeviceId(int32_t deviceId);
     void setPlaybackDeviceId(int32_t deviceId);
-    void prepareRecording();
-    void startRecording();
-    void stopRecording();
+
+    bool prepareRecording(JNIEnv *env);
+    bool startRecording(JNIEnv *env);
+    bool stopRecording(JNIEnv *env);
 
     /*
      * oboe::AudioStreamCallback interface implementation
      */
     oboe::DataCallbackResult onAudioReady(oboe::AudioStream *oboeStream,
-                                          void *audioData, int32_t numFrames);
-    void onErrorBeforeClose(oboe::AudioStream *oboeStream, oboe::Result error);
-    void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error);
+                                          void *audioData, int32_t numFrames) override;
+    void onErrorBeforeClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
+    void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
     bool setAudioApi(oboe::AudioApi);
-    bool isAAudioSupported(void);
+    bool setLowLatency(bool lowLatency);
+    bool isAAudioSupportedAndRecommended();
+
     void setAudioDataListener(JNIEnv *env, jobject instance, jobject callback);
     int32_t getSampleRate();
     int32_t getChannelCount();
+    int32_t getBitRate();
+    int32_t getAudioApi();
+    const char * getOboeVersion();
 
    private:
+    JavaVM* mJavaVm;
+    FullDuplexPassthru mFullDuplexPassthru;
+    jobject mCallbackObject;
+
     bool mIsRecording = false;
-    bool mSkipLocalPlayback = false;
-    uint64_t mProcessedFrameCount = 0;
-    uint64_t mSystemStartupFrames = 0;
     int32_t mRecordingDeviceId = oboe::kUnspecified;
     int32_t mPlaybackDeviceId = oboe::kUnspecified;
     oboe::AudioFormat mFormat = oboe::AudioFormat::I16;
     int32_t mSampleRate = oboe::kUnspecified;
     int32_t mInputChannelCount = oboe::ChannelCount::Stereo;
     int32_t mOutputChannelCount = oboe::ChannelCount::Stereo;
-    oboe::AudioStream *mRecordingStream = nullptr;
-    oboe::AudioStream *mPlayStream = nullptr;
-    std::mutex mRestartingLock;
     oboe::AudioApi mAudioApi = oboe::AudioApi::AAudio;
+    bool mLowLatency = false;
 
-    void openRecordingStream();
-    void openPlaybackStream();
-
-    void startStream(oboe::AudioStream *stream);
-    void stopStream(oboe::AudioStream *stream);
-    void closeStream(oboe::AudioStream *stream);
-
-    void openAllStreams();
-    void startAllStreams();
-    void closeAllStreams();
-    void restartStreams();
+    oboe::ManagedStream mRecordingStream;
+    oboe::ManagedStream mPlayStream;
 
     oboe::AudioStreamBuilder *setupCommonStreamParameters(
         oboe::AudioStreamBuilder *builder);
@@ -80,7 +83,9 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
         oboe::AudioStreamBuilder *builder);
     oboe::AudioStreamBuilder *setupPlaybackStreamParameters(
         oboe::AudioStreamBuilder *builder);
-    void warnIfNotLowLatency(oboe::AudioStream *stream);
+
+    void closeStream(oboe::ManagedStream &stream);
+    void warnIfNotLowLatency(oboe::ManagedStream &stream);
 };
 
 #endif  // OBOE_NATIVEAUDIOENGINE_H

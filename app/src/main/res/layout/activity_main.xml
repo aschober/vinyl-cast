@@ -1,20 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/landscapeConstraintLayout"
+    android:id="@+id/mainConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.schober.vinylcast.MainActivity">
+    android:clipToPadding="false"
+    android:clipChildren="false"
+    android:fitsSystemWindows="true"
+    tools:context="tech.schober.vinylcast.ui.main.MainActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/audioDeviceContainer"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+        android:id="@+id/recordContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginLeft="4dp"
         android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin">
+        android:layout_marginRight="4dp"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        app:layout_constraintBottom_toTopOf="@+id/statusContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <tech.schober.vinylcast.ui.main.BarGraphView
+            android:id="@+id/audio_visualizer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            app:color="@color/colorSlateGrayTransparent"
+            app:length="16"
+            app:maxValue="0"
+            app:minValue="-112" />
 
         <ImageButton
             android:id="@+id/startRecordingButton"
@@ -32,193 +51,77 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageView
-            android:id="@+id/startRecordingIndicator"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:alpha=".5"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHeight_default="percent"
-            app:layout_constraintHeight_percent=".25"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_default="percent"
-            app:layout_constraintWidth_percent=".25"
-            app:srcCompat="@drawable/ic_media_play_dark" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/audioDeviceContainer"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/statusContainer"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/recDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/recording_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/recording_devices_spinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintTop_toBottomOf="@+id/recDeviceLabel" />
-
-        <TextView
-            android:id="@+id/playDeviceLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:text="@string/playback_device"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/recording_devices_spinner" />
-
-        <com.google.sample.audio_device.AudioDeviceSpinner
-            android:id="@+id/playback_devices_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/right_barrier"
-            app:layout_constraintTop_toBottomOf="@+id/playDeviceLabel" />
-
-        <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/encodingSelectionGroup"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/playback_devices_spinner">
-
-            <TextView
-                android:id="@+id/encodingTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:text="@string/stream_encoding" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonWav"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginLeft="16dp"
-                android:lines="1"
-                android:maxLines="1"
-                android:text="@string/stream_encoding_wav" />
-
-            <RadioButton
-                android:id="@+id/encodingButtonAac"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:lines="1"
-                android:maxLines="1"
-                android:text="@string/stream_encoding_aac" />
-        </RadioGroup>
-
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/right_barrier"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:barrierDirection="end"
-            app:constraint_referenced_ids="recording_devices_spinner, playback_devices_spinner" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
         android:id="@+id/statusContainer"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/metadataListing"
         android:layout_marginLeft="@dimen/activity_horizontal_margin"
         android:layout_marginTop="@dimen/activity_vertical_margin"
         android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="8dp"
-        android:orientation="horizontal">
+        android:layout_marginBottom="@dimen/activity_landscape_vertical_margin"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/playbackControls"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/recordContainer">
 
-        <TextView
-            android:id="@+id/statusLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="top|left"
-            android:text="@string/status"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+        <FrameLayout
+            android:id="@+id/placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin" />
 
         <TextView
             android:id="@+id/statusText"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="5dp"
-            android:layout_marginTop="1dp"
-            android:layout_weight="0.86"
-            android:gravity="top|left"
+            android:layout_gravity="center"
+            android:gravity="top|center"
             android:lines="2"
             android:textSize="15sp" />
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/metadataListing"
-        android:layout_width="fill_parent"
+        android:id="@+id/playbackControls"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin"
-        android:orientation="horizontal">
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:clipToPadding="false"
+        android:clipChildren="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusContainer">
 
-        <ImageView
-            android:id="@+id/coverArtImage"
-            android:layout_width="75dip"
-            android:layout_height="75dip" />
-
-        <LinearLayout
-            android:layout_width="fill_parent"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            android:layout_marginTop="4dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            app:cardElevation="8dp" >
 
-            <TextView
-                android:id="@+id/trackTitle"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+            <tech.schober.vinylcast.ui.main.PlayStopView
+                android:id="@+id/play_stop_view"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:foreground="?android:selectableItemBackground"
+                app:fill_color="@color/colorIcons"
+                app:pause_bg="@color/colorAccent2"
+                app:play_bg="@color/colorPrimary" />
 
-            <TextView
-                android:id="@+id/albumName"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/artistName"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp" />
-        </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

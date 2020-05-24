@@ -1,72 +1,108 @@
-<img src="https://cloud.githubusercontent.com/assets/3988421/25033468/8d0ed758-20a3-11e7-8dc9-c141ceaeb3a6.png" width="100">
+<img align="left" width="120" height="120" src="https://cloud.githubusercontent.com/assets/3988421/25033468/8d0ed758-20a3-11e7-8dc9-c141ceaeb3a6.png">
 
-# vinyl-cast
+# Vinyl Cast
 
 **Listen to vinyl records wirelessly throughout your home.**
 
-Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player to Chromecast-enabled devices while also detecting the current song being played and displaying the related metadata. The playback history is then stored in a local database for future features around sharing and analysis.
+<br>
 
-App makes use of Android's USB audio peripheral support, audio recorder, media codecs, media APIs, Cast API and http server-capability to stream the audio of a connected audio-source to Chromecast-devices. ~The song metadata is determined via audio acr (automatic content recognition) using fingerprints of the raw audio stream which upon successful matching, provides rich metadata for display and storage.~
+Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player (or any audio source for that matter) to Google Cast-enabled (Chromecast built-in) devices or groups.
+
+The Vinyl Cast App makes use of Android's USB audio peripheral support, audio recorder, media codecs, Google Oboe libary, media APIs, and Cast API to stream the audio from a connected audio source to Cast-enabled devices.
 
 #### Demo: [YouTube](https://youtu.be/HBDkxEvCcHQ)
 
-#### Simple UI: Tap the record to start streaming
+Note: The initial release of Vinyl Cast included using Audio ACR to detect the song being played, but unfortunately this feature relied on a now discontinued third-party library/service so the feature was removed. Other options are being explored to add this feature back to Vinyl Cast in the future.
+
+#### Simple UI: Tap the record or play button to start streaming
 
 The record in the app spins when actively streaming.
+<p float="left">
+  <img src="https://user-images.githubusercontent.com/3988421/82761785-aa06a580-9dc2-11ea-8de4-c0425a5e30fe.png" width="200">
+  <img src="https://user-images.githubusercontent.com/3988421/82761783-a83ce200-9dc2-11ea-9dbf-4a3e22496cf8.png" width="200">
+  <img src="https://user-images.githubusercontent.com/3988421/82761782-a70bb500-9dc2-11ea-930f-b05e1405eca7.png" width="200">
+</p>
 
-<img src="https://cloud.githubusercontent.com/assets/3988421/24994190/524ae738-1fef-11e7-9a33-0e585112228c.png" width="200">
+# Required Hardware
 
-#### Rich Notifications: Audio ACR + Android Media APIs
+- [Android Device](#iphone-android-device)
+- [USB Audio Device](#microphone-usb-audio-device)
+- [USB OTG Adapter](#electric_plug-usb-otg-adapter)
+- [Audio Source](#notes-audio-source)
+- [Cast-Enabled Device](#satellite-cast-enabled-device)
 
-NOTE: For now, removed Audio ACR features as the 3rd Party SDK is no longer available.
+#### :iphone: Android Device
+An Android device will be used to capture raw audio from your record player (or any analog audio source), perform audio format conversion (if selected), and act as a webserver to stream the digital audio stream to Cast-enabled devices.
+
+The app was developed and testing using a Nexus 6, Pixel 5C, and Pixel 3.
+
+#### :microphone: USB Audio Device
+A USB audio interface is used to capture the raw audio from your Audio Source (e.g. record player) and make the analog audio stream available for recording/streaming by the Vinyl Cast app.  If your analog audio source includes a USB interface, you can use this. If your record player only has analog audio output, I would recommend the [Behringer UCA202](http://a.co/35VGwrV) (without pre-amp), [Behringer UFO202](http://a.co/hThUxAL) (with pre-amp), or [Dynasty ProAudio DA-UA2D](https://www.amazon.com/dp/B07MJ1W974/ref=cm_sw_r_tw_dp_U_x_hlDYEbEJXJB26) (standalone pre-amp with USB interface).
+
+The app was developed and tested using a Behringer UCA202.
+
+#### :electric_plug: USB Adapter
+You will need a way to connect the USB Audio Device to your Android device. Typically, your USB Audio Device has USB-A male connector, and you will need a USB adapter/cable to attach the USB Audio Device to your Android device.
+
+The USB adapter you need depends on the type of USB connector your Android device has (usually how you charge the device). If you have USB-C connector on your Android device, you'll need a USB-C to USB-A female adapter. If you have USB Micro-B connector, you'll need a USB OTG adapter from USB Micro-B to USB-A female. Note that USB adapters are now often included in the box with new Android phones to help transfer data from an old device (e.g. Pixel devices include a ["Quick Switch Adapter"](https://support.google.com/pixelphone/answer/7158537?hl=en) going from USB-C to USB-A female). Otherwise you can purchase one separately that should look like [this USB Micro-B OTG cable](https://www.amazon.com/dp/B00LN3LQKQ/ref=cm_sw_em_r_mt_dp_U_X5DYEbMD7Y7EG) or like [this USB-C adapter](https://www.amazon.com/dp/B01GGKYYT0/ref=cm_sw_em_r_mt_dp_U_SJDYEb6P22JRB).
+
+An adapter with power passthrough like this [one](https://www.amazon.com/dp/B07KMC3DTL/ref=cm_sw_r_tw_dp_U_x_6TgeDbFQRBDRE) can be extra useful to be able to charge your Android device while also connected to your USB Audio Device.
+
+#### :notes: Audio Source
+You'll need an audio source (e.g. a vinyl record player) to provide audio input to the Vinyl Cast app. If you're not familiar, it could look like [this](https://www.amazon.com/dp/B07N3XJ66N/ref=cm_sw_em_r_mt_dp_U_AvDYEb4J3NQZ0).
+
+#### :satellite: Cast-Enabled Device
+You'll need a Google Cast-enabled (aka Chromecast built-in) device hooked up to speakers to receive and playback the audio streamed from the Vinyl Cast app.
+
+The app was developed and tested using a Google Home, Chromecast Audio, and Chromecast (2nd Generation).
+
+# Setup Hardware
+
+The hardware should be set up as expected with the goal of recording audio from audio source via the Android device and wirelessly transmitting the audio to a Cast-enabled device.
+
+| Hardware Setup Flow Chart      |
+| :---: |
+| Android Device :point_right: USB OTG Adapter :point_right: USB Audio Device :point_right: Audio Source |
+| :satellite: |
+| Cast-Enabled Device :point_right: Speakers |
+
+<img src="https://cloud.githubusercontent.com/assets/3988421/25034113/e0cbc72e-20a9-11e7-8be4-b42e6c410c8e.png" width="530">
+
+# Get Casting
+With the app installed and hardware setup:
+
+- open the Vinyl Cast app and open Settings via the gear (:gear:) icon<br>
+- select a `Recording Device` (if connected, you should see your USB Audio Device in dropdown) - default: `Auto select`
+- select a `Local Playback Device` (if you want to hear the recorded audio on the Android Device speakers or USB output device)  - default: `None`
+- select an `Audio Encoding` to adjust how much network bandwidth is used when streaming audio: WAV (lossless but more network bandwidth) or ADTC AAC (lossy but much less network bandwidth) - default: `WAV`
+- return to app home screen and tap the Cast button to begin a Cast sesion to a Cast-enabled device or group (for synced multi-room audio).
+- tap the vinyl record image or play button to begin audio recording & streaming
+
+The vinyl record image will rotate to signify that the app is actively recording/streaming and a real-time spectral plot from the FFT of the raw audio (like a Graphic EQ) will give real-time feedback of the audio input.
+
+Tap the record again to stop the stream or access controls via the Android playback notification.
+
+Note there is about a ~10-20 sec audio delay in the playback on any Cast-enabled devices due to buffering of the media player of the Cast-enabled device.
+
+# Dev Notes
+
+#### Google Oboe
+Vinly Cast uses the [Google Oboe](https://github.com/google/oboe) library to access low-latency audio APIs on Android devices.
+
+#### Audio Conversion
+The app provides two choices for audio encoding: WAV and AAC. If AAC is selected, the app converts the raw 16 bit PCM stereo audio data captured from the USB audio device at a sample rate of 48kHz to an AAC LC 192kbps encoded stream with ADTS headers which is sent via HTTP 1.1 chunked transfer encoding.
+
+# Future Ideas
+
+##### Audio ACR + Rich Notifications
+
+Add Audio ACR to detect the current song being played and display the related metadata.
+
+The song metadata is determined via audio acr (automatic content recognition) using fingerprints of the raw audio stream which upon successful matching, provides rich metadata for display and storage. The playback history is then stored in a local database for future features around sharing and analysis.
 
 > Check out what's playing from the notification bar or lockscreen.
 > 
 > <img src="https://cloud.githubusercontent.com/assets/3988421/24994901/6d4dd452-1ff2-11e7-92d7-ef6ae8061901.png" width="200">
-
-# Required Hardware
-
-**Android Phone**: An Android phone will be used to capture raw audio and act as a webserver to stream to Chromecast devices. The app was developed using a Nexus 6.
-
-**USB Soundcard**: A USB sound card is used to capture the raw audio from the Vinyl Record Player and make the raw audio stream available to the app. I would recommend the [Behringer UCA202](http://a.co/35VGwrV) or [Behringer UFO202](http://a.co/hThUxAL). If your record player does not have a built-in phono pre-amp, should get the UFO202. The app was developed using a Behringer UCA202. You may also use your record player's USB audio output if available.
-
-**USB OTG Cable**: If your Android device does not have a USB A Female port, you will need a USB OTG cable to attach the USB soundcard to your device. An OTG y-cable with a power lead like this [one](http://a.co/b7Qw9NI) can be extra useful to save battery power and perhaps charge phone as well. A USB-C adapter like this [one](https://www.amazon.com/dp/B07KMC3DTL/ref=cm_sw_r_tw_dp_U_x_6TgeDbFQRBDRE) is also available for USB-C equipped phones.
-
-**Vinyl Record Player**: You'll need a vinyl record player to cast the audio from. If you're not familiar, it will look like [this](http://a.co/63s5QD1)
-
-**Chromecast-enabled Device and Speakers**: You'll need a Chromecast-enabled device hooked up to speakers to receive the audio from the record player. The app was developed using a Chromecast Audio.
-
-# Hardware Setup
-
-The hardware should be set up as expected with the goal of wirelessly transmitting the audio from the record player to a Chromecast using an Android device.
-
-**Android Phone -> USB OTG Cable -> USB Soundcard -> Vinyl Record Player**
-
-**Chromecast -> Powered Speakers**
-
-<img src="https://cloud.githubusercontent.com/assets/3988421/25034113/e0cbc72e-20a9-11e7-8be4-b42e6c410c8e.png" width="530">
-
-# Get Streaming
-With the app installed and hardware setup:
-- open the app
-- select a `Recording Device` (should see your USB audio input device in dropdown if connected) - default: `Auto select`
-- select a `Local Playback Device` (if you want to hear the recorded audio on the Android-device speakers or USB output device)  - default: `None`
-- select a `Stream Encoding` to adjust how much network bandwidth is used when streaming audio: WAV (lossless but more network bandwidth) or ADTC AAC (lossy but much less network bandwidth) - default: `WAV`
-- tap the vinyl record image to begin audio recording & streaming
-- tap the Cast button to begin streaming to a Cast-enabled device
-
-The vinyl record image will rotate to signify that the app is actively recording and streaming audio.
-
-Tap the record again to stop the stream or access controls via the Android rich notification.
-
-Note there is about a 3-10 sec delay in the audio stream from the record player to a Cast-enabled device due to buffering of the audio stream by the Cast-enabled device.
-
-# Dev Notes
-
-#### Audio Conversion
-The app converts the raw 16 bit PCM stereo audio data captured from the USB sound card at a sample rate of 48kHz to an AAC LC 192kbps encoded stream with ADTS headers which is sent via HTTP 1.1 chunked transfer encoding.
-
-# Future Ideas
 
 ##### Scrobble to Last.fm / Discogs / Twitter
 The app can scrobble the listening history to Last.fm or update a user collection in Discogs or send out a tweet when a new record starts playing.
