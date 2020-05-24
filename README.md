@@ -41,15 +41,15 @@ A USB audio interface is used to capture the raw audio from your Audio Source (e
 
 The app was developed and tested using a Behringer UCA202.
 
-#### :electric_plug: USB OTG Adapter
-You will need a way to connect the USB Audio Device to your Android device. If your Audio Device has USB Type-A male connector and your Android device does *not* have a USB Type-A Female port, you will need a USB OTG adapter/cable to attach the USB soundcard to your Android device.
+#### :electric_plug: USB Adapter
+You will need a way to connect the USB Audio Device to your Android device. Typically, your USB Audio Device has USB-A male connector, and you will need a USB adapter/cable to attach the USB Audio Device to your Android device.
 
-The USB OTG adapter you need depends on the type of USB connector your Android device has (usually how you charge the device). Note that USB OTG adapters are now often included in the box with new Android phones to help transfer data from an old device (e.g. Pixel devices include a ["Quick Switch Adapter"](https://support.google.com/pixelphone/answer/7158537?hl=en) going from USB-C to USB-A female). Otherwise you can purchase one separately that should look like [this](https://www.amazon.com/dp/B00LN3LQKQ/ref=cm_sw_em_r_mt_dp_U_X5DYEbMD7Y7EG) if your Android Device has a Micro USB B connector or like [this](https://www.amazon.com/dp/B01GGKYYT0/ref=cm_sw_em_r_mt_dp_U_SJDYEb6P22JRB) if your Android device has USB C connector.
+The USB adapter you need depends on the type of USB connector your Android device has (usually how you charge the device). If you have USB-C connector on your Android device, you'll need a USB-C to USB-A female adapter. If you have USB Micro-B connector, you'll need a USB OTG adapter from USB Micro-B to USB-A female. Note that USB adapters are now often included in the box with new Android phones to help transfer data from an old device (e.g. Pixel devices include a ["Quick Switch Adapter"](https://support.google.com/pixelphone/answer/7158537?hl=en) going from USB-C to USB-A female). Otherwise you can purchase one separately that should look like [this USB Micro-B OTG cable](https://www.amazon.com/dp/B00LN3LQKQ/ref=cm_sw_em_r_mt_dp_U_X5DYEbMD7Y7EG) or like [this USB-C adapter](https://www.amazon.com/dp/B01GGKYYT0/ref=cm_sw_em_r_mt_dp_U_SJDYEb6P22JRB).
 
-An OTG adapter with power passthrough like this [one](https://www.amazon.com/dp/B07KMC3DTL/ref=cm_sw_r_tw_dp_U_x_6TgeDbFQRBDRE) can be extra useful to save battery power while connected to your USB Audio Device.
+An adapter with power passthrough like this [one](https://www.amazon.com/dp/B07KMC3DTL/ref=cm_sw_r_tw_dp_U_x_6TgeDbFQRBDRE) can be extra useful to be able to charge your Android device while also connected to your USB Audio Device.
 
 #### :notes: Audio Source
-You'll need an audio source (e.g. a vinyl record player) to provide as audio input to the Vinyl Cast app. If you're not familiar, it could look like [this](https://www.amazon.com/dp/B07N3XJ66N/ref=cm_sw_em_r_mt_dp_U_AvDYEb4J3NQZ0).
+You'll need an audio source (e.g. a vinyl record player) to provide audio input to the Vinyl Cast app. If you're not familiar, it could look like [this](https://www.amazon.com/dp/B07N3XJ66N/ref=cm_sw_em_r_mt_dp_U_AvDYEb4J3NQZ0).
 
 #### :satellite: Cast-Enabled Device
 You'll need a Google Cast-enabled (aka Chromecast built-in) device hooked up to speakers to receive and playback the audio streamed from the Vinyl Cast app.
