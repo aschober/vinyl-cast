@@ -20,11 +20,11 @@ The record in the app spins when actively streaming.
 
 # Required Hardware
 
-- [:iphone: Android Device](#android-device)
-- [:microphone: USB Audio Device](#usb-audio-device)
-- [:electric_plug: USB OTG Adapter](#usb-otg-adapter)
-- [:notes: Audio Source](#audio-source)
-- [:satellite: Cast-Enabled Devices](#cast-enabled-devices)
+- [Android Device](#iphone-android-device)
+- [USB Audio Device](#microphone-usb-audio-device)
+- [USB OTG Adapter](#electric_plug-usb-otg-adapter)
+- [Audio Source](#notes-audio-source)
+- [Cast-Enabled Device](#satellite-cast-enabled-device)
 
 #### :iphone: Android Device
 An Android device will be used to capture raw audio from your record player (or any analog audio source), perform audio format conversion (if selected), and act as a webserver to stream the digital audio stream to Cast-enabled devices.
