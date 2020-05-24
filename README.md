@@ -66,12 +66,6 @@ The hardware should be set up as expected with the goal of recording audio from 
 | :satellite: |
 | Cast-Enabled Device :point_right: Speakers |
 
-**Android Device -> USB OTG Adapter -> USB Audio Device -> Audio Source**<br>
-:arrow_down:<br>
-**Wireless Network Connection**<br>
-:arrow_down:<br>
-**Cast-Enabled Device -> Speakers**<br>
-
 <img src="https://cloud.githubusercontent.com/assets/3988421/25034113/e0cbc72e-20a9-11e7-8be4-b42e6c410c8e.png" width="530">
 
 # Get Casting
