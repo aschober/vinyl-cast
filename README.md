@@ -32,7 +32,7 @@ The record in the app spins when actively streaming.
 - [Cast-Enabled Device](#satellite-cast-enabled-device)
 
 #### :iphone: Android Device
-An Android device will be used to capture raw audio from your record player (or any analog audio source), perform audio format conversion (if selected), and act as a webserver to stream the digital audio stream to Cast-enabled devices.
+An Android device will be used to capture raw audio from your record player (or any analog audio source), perform audio format conversion (if selected), and act as a webserver to stream the digital audio stream to Cast-enabled devices. The Vinyl Cast app currently requires an Android device running Android 7.1 or later.
 
 The app was developed and testing using a Nexus 6, Pixel 5C, and Pixel 3.
 
