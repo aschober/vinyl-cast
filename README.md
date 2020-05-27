@@ -10,6 +10,8 @@ Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl reco
 
 The Vinyl Cast App makes use of Android's USB audio peripheral support, audio recorder, media codecs, Google Oboe libary, media APIs, and Cast API to stream the audio from a connected audio source to Cast-enabled devices.
 
+#### Download: [Latest GitHub Release](https://github.com/aschober/vinyl-cast/releases/latest) or via [Google Play Store](https://play.google.com/store/apps/details?id=tech.schober.vinylcast.playstore)
+
 #### Demo: [YouTube](https://youtu.be/HBDkxEvCcHQ)
 
 Note: The initial release of Vinyl Cast included using Audio ACR to detect the song being played, but unfortunately this feature relied on a now discontinued third-party library/service so the feature was removed. Other options are being explored to add this feature back to Vinyl Cast in the future.
