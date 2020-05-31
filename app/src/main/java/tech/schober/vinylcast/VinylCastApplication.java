@@ -22,11 +22,6 @@ public class VinylCastApplication extends VinylCastApplicationBase {
     public void onCreate() {
         super.onCreate();
 
-        if (BuildConfig.DEBUG) {
-            Timber.plant(new Timber.DebugTree());
-        }
-        Timber.plant(new CrashReportingTree());
-
         // This static call will reset default values only on the first ever read. Also according
         // to StrictMode, it's slow due to disk reads on Main Thread.
         PreferenceManager.setDefaultValues(getBaseContext(), R.xml.preferences, false);
@@ -40,19 +35,5 @@ public class VinylCastApplication extends VinylCastApplicationBase {
 
     public SessionManager getCastSessionManager() {
         return castSessionManager;
-    }
-
-    private class CrashReportingTree extends Timber.Tree {
-        @Override
-        protected void log(int priority, @Nullable String tag, @NotNull String message, @Nullable Throwable throwable) {
-            if (priority == Log.ERROR || priority == Log.DEBUG) {
-                FirebaseCrashlytics.getInstance().log(message);
-                if (throwable != null) {
-                    FirebaseCrashlytics.getInstance().recordException(throwable);
-                }
-            } else {
-                return;
-            }
-        }
     }
 }

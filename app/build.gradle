@@ -30,10 +30,14 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
+            // INSTABUG_TOKEN_BETA should be defined in gradle.properties
+            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_BETA)
             debuggable true
         }
         release {
             minifyEnabled true
+            // INSTABUG_TOKEN_LIVE should be defined in gradle.properties
+            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_LIVE)
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
