@@ -77,3 +77,17 @@
   left: 23px;
   width: 246px;
 }
+
+//
+// Pixel 3
+//
+.device.pixel-3 {
+  width: 1280px;
+  height: 2640px;
+  background-image: url(../../images/devices/pixel-3.png);
+}
+.device.pixel-3 .app-screenshot {
+  top: 240px;
+  left: 100px;
+  width: 1080px;
+}
