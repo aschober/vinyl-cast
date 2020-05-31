@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import github.bewantbe.audio_analyzer_for_android.STFT;
+import timber.log.Timber;
 
 public class AudioVisualizer {
     private static final String TAG = "AudioVisualizer";
@@ -98,7 +99,7 @@ public class AudioVisualizer {
                         stft.feedData(monoShortBuffer, monoArrayIndex);
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Exception reading audio stream input. Exiting.", e);
+                    Timber.e(e, "Exception reading audio stream input. Exiting.");
                     break;
                 }
             }

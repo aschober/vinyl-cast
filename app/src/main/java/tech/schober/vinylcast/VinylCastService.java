@@ -44,6 +44,7 @@ import tech.schober.vinylcast.audio.ConvertAudioStreamProvider;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerImpl;
 import tech.schober.vinylcast.utils.VinylCastHelpers;
+import timber.log.Timber;
 
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 
@@ -166,19 +167,19 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
+        Timber.d("onBind");
         return binder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d(TAG, "onUnbind");
+        Timber.d("onUnbind");
         return super.onUnbind(intent);
     }
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
+        Timber.d("onCreate");
         super.onCreate();
         registerMediaSession();
         updateStatus(STATUS_READY);
@@ -188,7 +189,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
+        Timber.d("onDestroy");
         if (castSessionManagerListener != null) {
             ((VinylCastApplication)getApplication()).getCastSessionManager().removeSessionManagerListener(castSessionManagerListener);
             castSessionManagerListener = null;
@@ -222,7 +223,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand");
+        Timber.d("onStartCommand");
 
         if (castSessionManagerListener == null) {
             castSessionManagerListener = new CastSessionManagerListener();
@@ -230,7 +231,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
 
         String action = intent.getAction();
-        Log.d(TAG, "onStartCommand received action: " + action);
+        Timber.d("onStartCommand received action: " + action);
 
         switch (action) {
             case VinylCastService.ACTION_START_RECORDING:
@@ -248,7 +249,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     }
 
     private void engage() {
-        Log.i(TAG, "engage");
+        Timber.i("engage");
 
         // fetch audio record settings values out of SharedPreferences
         int recordingDeviceId = VinylCastHelpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_recording_device_id, R.string.prefs_default_recording_device_id);
@@ -257,14 +258,14 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         boolean lowLatency = PreferenceManager.getDefaultSharedPreferences (this).getBoolean(getString(R.string.prefs_key_low_latency), Boolean.valueOf(getString(R.string.prefs_default_low_latency)));
 
         if (isPlaybackDeviceSelected() && !requestAudioFocus()) {
-            Log.e(TAG, "Failed to get Audio Focus for playback. Stopping VinylCastService...");
+            Timber.e("Failed to get Audio Focus for playback. Stopping VinylCastService...");
             updateStatus(STATUS_ERROR_AUDIO_FOCUS_FAILED);
             disengage(true);
             return;
         }
 
         if (!startAudioRecord(recordingDeviceId, playbackDeviceId, lowLatency)) {
-            Log.e(TAG, "Failed to start Audio Record. Stopping VinylCastService...");
+            Timber.e("Failed to start Audio Record. Stopping VinylCastService...");
             updateStatus(STATUS_ERROR_AUDIO_RECORD_FAILED);
             disengage(true);
             return;
@@ -273,7 +274,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         switch (audioEncoding) {
             case AUDIO_ENCODING_AAC:
                 if (!startAudioConverter(audioRecordStreamProvider, AUDIO_STREAM_BUFFER_SIZE)) {
-                    Log.e(TAG, "Failed to start Audio Converter. Stopping VinylCastService...");
+                    Timber.e("Failed to start Audio Converter. Stopping VinylCastService...");
                     updateStatus(STATUS_ERROR_AUDIO_CONVERT_FAILED);
                     disengage(true);
                     return;
@@ -286,7 +287,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
 
         if (!startHttpServer(httpStreamProvider)) {
-            Log.e(TAG, "Failed to start HTTP Server. Stopping VinylCastService...");
+            Timber.e("Failed to start HTTP Server. Stopping VinylCastService...");
             updateStatus(STATUS_ERROR_HTTP_SERVER_FAILED);
             disengage(true);
             return;
@@ -317,7 +318,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     }
 
     private void disengage(boolean fromError) {
-        Log.i(TAG, "disengage");
+        Timber.i("disengage");
         unregisterForBecomingNoisy();
         abandonAudioFocus();
         stopAudioRecognition();
@@ -350,7 +351,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         audioFocusChangeListener = focusChange -> {
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_LOSS:
-                    Log.d(TAG, "Lost Audio Focus. stopping...");
+                    Timber.d("Lost Audio Focus. stopping...");
                     disengage(false);
                     break;
 
@@ -408,7 +409,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             convertAudioThread.start();
             return true;
         } catch (IOException e) {
-            Log.e(TAG, "Exception starting audio record task.", e);
+            Timber.e(e,"Exception starting audio record task.");
             return false;
         }
     }
@@ -434,7 +435,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
             httpStreamServer.start();
             return true;
         } catch (IOException e) {
-            Log.e(TAG, "Exception creating webserver", e);
+            Timber.e(e, "Exception creating webserver");
             return false;
         }
     }
@@ -521,7 +522,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         }
 
         RemoteMediaClient remoteMediaClient = ((VinylCastApplication)getApplication()).getCastSessionManager().getCurrentCastSession().getRemoteMediaClient();
-        if (isRecording()) {
+        if (isRecording() && httpStreamServer != null) {
             MediaMetadata audioMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK);
             String url = httpStreamServer.getStreamUrl();
             MediaInfo mediaInfo = new MediaInfo.Builder(url)
@@ -530,7 +531,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
                     .setStreamDuration(MediaInfo.UNKNOWN_DURATION)
                     .setMetadata(audioMetadata)
                     .build();
-            Log.d(TAG, "Cast MediaInfo: " + mediaInfo);
+            Timber.d("Cast MediaInfo: " + mediaInfo);
             MediaLoadRequestData mediaLoadRequestData = new MediaLoadRequestData.Builder().setMediaInfo(mediaInfo).build();
             remoteMediaClient.load(mediaLoadRequestData);
         } else {
@@ -568,13 +569,13 @@ public class VinylCastService extends MediaBrowserServiceCompat {
     private MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback() {
         @Override
         public void onPlay() {
-            Log.d(TAG, "MediaSessionCompat onPlay");
+            Timber.d("MediaSessionCompat onPlay");
             engage();
         }
 
         @Override
         public void onStop() {
-            Log.d(TAG, "MediaSessionCompat onStop");
+            Timber.d("MediaSessionCompat onStop");
             disengage(false);
         }
     };
@@ -585,7 +586,7 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         @Override
         public void onSessionStarted(Session session, String sessionId) {
-            Log.d(TAG, "Cast onSessionStarted");
+            Timber.d("Cast onSessionStarted");
             // cast session started after service already started so trigger updateCastSession
             updateCastSession();
         }

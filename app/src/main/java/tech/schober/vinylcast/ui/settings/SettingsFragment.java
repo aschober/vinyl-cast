@@ -38,12 +38,12 @@ import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpClient;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerListener;
+import timber.log.Timber;
 
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 
 
 public class SettingsFragment extends PreferenceFragmentCompat implements ServiceConnection {
-    private static final String TAG = "SettingsFragment";
 
     private static final Set<Integer> RECORDING_DEVICES_BUILTIN = new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_BUILTIN_MIC));
     private static final Set<Integer> PLAYBACK_DEVICES_BUILTIN = new HashSet<>(Arrays.asList(AudioDeviceInfo.TYPE_BUILTIN_EARPIECE, AudioDeviceInfo.TYPE_BUILTIN_SPEAKER));
@@ -69,7 +69,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
     };
 
     private Preference.OnPreferenceChangeListener audioDeviceOnChangeListener = (preference, newValue) -> {
-        Log.d(TAG, "audioDeviceOnChangeListener: " + preference.getKey() + " - " + newValue);
+        Timber.d("audioDeviceOnChangeListener: " + preference.getKey() + " - " + newValue);
 
         AudioDevicePreference audioDevicePreference = (AudioDevicePreference) preference;
         AudioDevicePreference recordingDevicePref = findPreference(R.string.prefs_key_recording_device_id);
@@ -109,26 +109,26 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
     @Override
     public void onStart() {
-        Log.d(TAG, "onStart");
+        Timber.d("onStart");
         super.onStart();
         this.binder = ((SettingsActivity) getActivity()).getVinylCastBinder();
     }
 
     @Override
     public void onResume() {
-        Log.d(TAG, "onResume");
+        Timber.d("onResume");
         super.onResume();
     }
 
     @Override
     public void onPause() {
-        Log.d(TAG, "onPause");
+        Timber.d("onPause");
         super.onPause();
     }
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-        Log.d(TAG, "onCreatePreferences");
+        Timber.d("onCreatePreferences");
 
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
@@ -195,7 +195,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        Log.d(TAG, "onServiceConnected");
+        Timber.d("onServiceConnected");
         this.binder = (VinylCastService.VinylCastBinder) service;
 
         // update state of dynamic preferences now that we're bound
@@ -227,18 +227,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
     private void updateDynamicPreferences() {
         if (getActivity() != null) {
             getActivity().runOnUiThread(new UpdateDynamicPrefsRunnable());
-        }
-    }
-
-    public static void printViewHierarchy(ViewGroup vg, String prefix) {
-        for (int i = 0; i < vg.getChildCount(); i++) {
-            View v = vg.getChildAt(i);
-            String desc = prefix + " | " + "[" + i + "/" + (vg.getChildCount()-1) + "] "+ v.getClass().getSimpleName() + " " + v.getId();
-            Log.v(TAG, desc);
-
-            if (v instanceof ViewGroup) {
-                printViewHierarchy((ViewGroup)v, desc);
-            }
         }
     }
 
