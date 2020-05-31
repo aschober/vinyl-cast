@@ -42,8 +42,8 @@ app:
 #
 # Marketing
 #
-marketing_header: Does Awesome Stuff # Optional
-marketing_desc: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+marketing_header: Listen to vinyl records wirelessly. # Optional
+marketing_desc: Vinyl Cast is an Android app used to wirelessly stream the audio of a vinyl record player (or any audio source for that matter) to Google Cast-enabled (Chromecast built-in) devices or groups.
 
 #
 # Social Links
@@ -51,7 +51,7 @@ marketing_desc: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
 # Includes an icon for each username you enter
 #
 social-links:
-  github: aschober
+  github: aschober/vinyl-cast
   facebook:
   twitter: allenschober
   pinterest:
