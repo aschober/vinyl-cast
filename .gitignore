@@ -203,3 +203,7 @@ fabric.properties
 !/gradle/wrapper/gradle-wrapper.jar
 
 # End of https://www.gitignore.io/api/android,androidstudio
+
+
+# Firebase API Keys
+google-services.json
