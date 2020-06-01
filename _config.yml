@@ -95,6 +95,7 @@ download_button_text_color: white; # Optional
 #
 title: Vinyl Cast # Optional - Enter your site title
 description: Listen to vinyl records wirelessly. # Optional - Enter your site description
+footer: Background by <a href="https://unsplash.com/@trommelkopf">Steve Harvey</a> on <a href="https://unsplash.com/">Unsplash</a>
 
 #
 # Google Analytics
