@@ -1,18 +1,11 @@
 package tech.schober.vinylcast;
 
-import android.util.Log;
-
 import androidx.preference.PreferenceManager;
 
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.SessionManager;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import tech.schober.vinylcast.audio.NativeAudioEngine;
-import timber.log.Timber;
 
 public class VinylCastApplication extends VinylCastApplicationBase {
 
