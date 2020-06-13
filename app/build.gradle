@@ -3,17 +3,42 @@ buildscript {
         jcenter()
         mavenCentral()
     }
+    dependencies {
+        classpath 'org.ajoberstar.grgit:grgit-gradle:4.0.2'
+    }
 }
+
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+
+// remove GoogleServices / Firebase for 'github' variants
+android.applicationVariants.all { variant ->
+    if (variant.name.contains('github')) {
+        project.tasks.getByName('process' + variant.name.capitalize() + 'GoogleServices').enabled = false
+    }
+}
+
+// use grgit to determine versionCode and versionName
+ext {
+    git = org.ajoberstar.grgit.Grgit.open()
+    gitVersionCode = git.tag.list().size()
+    gitVersionName = "${git.describe(tags: true)}"
+}
+
+task printVersion() {
+    println("Version Name: $gitVersionName")
+    println("Version Code: $gitVersionCode")
+}
 
 android {
     compileSdkVersion 29
     defaultConfig {
         applicationId 'tech.schober.vinylcast'
-        minSdkVersion 25
+        minSdkVersion 23
         targetSdkVersion 29
-        versionCode 2
-        versionName "1.1.0"
+        versionCode gitVersionCode
+        versionName gitVersionName
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
@@ -27,10 +52,14 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
+            // INSTABUG_TOKEN_BETA should be defined in gradle.properties
+            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_BETA)
             debuggable true
         }
         release {
             minifyEnabled true
+            // INSTABUG_TOKEN_LIVE should be defined in gradle.properties
+            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_LIVE)
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -46,6 +75,13 @@ android {
             applicationId 'tech.schober.vinylcast.playstore'
             versionNameSuffix "-playstore"
             dynamicFeatures = [":audio_acr"]
+            firebaseCrashlytics {
+                // Enable processing and uploading of native symbols to Crashlytics
+                // servers. By default, this is disabled to improve build speeds.
+                // This flag must be enabled to see properly-symbolicated native
+                // stack traces in the Crashlytics dashboard.
+                nativeSymbolUploadEnabled true
+            }
         }
     }
     externalNativeBuild {
@@ -69,6 +105,8 @@ dependencies {
     implementation 'androidx.preference:preference:1.1.1'
     implementation 'androidx.mediarouter:mediarouter:1.1.0'
     implementation 'com.google.android.gms:play-services-cast-framework:18.1.0'
+    // Logging
+    implementation 'com.jakewharton.timber:timber:4.7.1'
     // HTTP Server
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     // Apache Commons IO for additional InputStream methods
@@ -78,8 +116,8 @@ dependencies {
      * product flavor: playstore
      */
     playstoreApi 'com.google.android.play:core:1.7.2'
+    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:17.0.0'
     playstoreImplementation 'com.instabug.library:instabug:9.1.4'
-
     /*
      * Test
      */

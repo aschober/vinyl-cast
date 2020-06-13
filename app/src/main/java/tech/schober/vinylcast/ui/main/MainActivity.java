@@ -31,6 +31,7 @@ import tech.schober.vinylcast.VinylCastService;
 import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.ui.VinylCastActivity;
 import tech.schober.vinylcast.ui.settings.SettingsActivity;
+import timber.log.Timber;
 
 import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_AUDIO_CONVERT_FAILED;
 import static tech.schober.vinylcast.VinylCastService.STATUS_ERROR_AUDIO_FOCUS_FAILED;
@@ -103,25 +104,25 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart");
+        Timber.d("onStart");
         super.onStart();
     }
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
+        Timber.d("onResume");
         super.onResume();
     }
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "onPause");
+        Timber.d("onPause");
         super.onPause();
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStop");
+        Timber.d("onStop");
         super.onStop();
     }
 
@@ -142,7 +143,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
     @Override
     public void onServiceConnected(ComponentName className,
                                    IBinder service) {
-        Log.d(TAG, "onServiceConnected");
+        Timber.d("onServiceConnected");
         super.onServiceConnected(className, service);
         binder.addVinylCastServiceListener(this);
         binder.addAudioVisualizerListener(this);
@@ -150,7 +151,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
 
     @Override
     public void onServiceDisconnected(ComponentName className) {
-        Log.d(TAG, "onServiceDisconnected");
+        Timber.d("onServiceDisconnected");
         binder.removeVinylCastServiceListener(this);
         binder.removeAudioVisualizerListener(this);
         super.onServiceDisconnected(className);
@@ -225,7 +226,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
             startIntent.setAction(VinylCastService.ACTION_START_RECORDING);
             MainActivity.this.startService(startIntent);
         } else {
-            Log.d(TAG, "VinylCastService is already running");
+            Timber.d("VinylCastService is already running");
         }
     }
 
@@ -235,7 +236,7 @@ public class MainActivity extends VinylCastActivity implements VinylCastService.
             stopIntent.setAction(VinylCastService.ACTION_STOP_RECORDING);
             MainActivity.this.startService(stopIntent);
         } else {
-            Log.d(TAG, "VinylCastService is not running");
+            Timber.d("VinylCastService is not running");
         }
     }
 

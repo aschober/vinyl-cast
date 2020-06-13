@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import fi.iki.elonen.NanoHTTPD;
 import tech.schober.vinylcast.audio.AudioStreamProvider;
 import tech.schober.vinylcast.utils.VinylCastHelpers;
+import timber.log.Timber;
 
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_WAV;
@@ -29,8 +30,6 @@ import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_WA
  */
 
 public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer {
-    private static final String TAG = "HttpStreamServerImpl";
-
     @Retention(RetentionPolicy.SOURCE)
     @StringDef({CONTENT_TYPE_WAV, CONTENT_TYPE_AAC})
     public @interface ContentType {}
@@ -83,7 +82,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
 
         // Set stream url and contentType
         streamUrl = "http://" + VinylCastHelpers.getIpAddress(context) + ":" + serverPort + serverUrlPath;
-        Log.d(TAG, "HTTP Server streaming at: " + streamUrl);
+        Timber.d("HTTP Server streaming at: " + streamUrl);
 
         // Notify listeners
         for (HttpStreamServerListener listener : listeners) {
@@ -104,7 +103,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         super.stop();
 
         // clear stream url
-        Log.d(TAG, "HTTP Server stopped streaming at: " + streamUrl);
+        Timber.d("HTTP Server stopped streaming at: " + streamUrl);
         streamUrl = null;
 
         // Notify listeners
@@ -138,15 +137,15 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     public Response serve(IHTTPSession session) {
         String path = session.getUri();
         if (path.equals(serverUrlPath)) {
-            Log.d(TAG, "Received HTTP Request: " + session.getRemoteIpAddress());
+            Timber.d("Received HTTP Request: " + session.getRemoteIpAddress());
             HttpClientImpl httpClient = httpServerClients.createHttpClient(session.getRemoteIpAddress(), session.getRemoteHostName());
             if (httpClient == null) {
-                Log.e(TAG, "Failed to create HttpClient.");
+                Timber.e("Failed to create HttpClient.");
                 return newFixedLengthResponse(Response.Status.NO_CONTENT, contentType, "Stream not available.");
             }
 
             Response response = newChunkedResponse(Response.Status.OK, contentType, httpClient.inputStream);
-            Log.d(TAG, "Sending HTTP Response: " + response);
+            Timber.d("Sending HTTP Response: " + response);
             return response;
         } else {
             return super.serve(session);
@@ -154,11 +153,10 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     }
 
     class HttpReadAudioStreamRunnable implements Runnable {
-        private static final String TAG = "HttpReadAudioStream";
 
         @Override
         public void run() {
-            Log.d(TAG, "starting...");
+            Timber.d("starting...");
             //Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
             byte[] buffer = new byte[audioBufferSize];
@@ -170,17 +168,17 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                             httpClient.outputStream.write(buffer, 0, bufferReadResult);
                             httpClient.outputStream.flush();
                         } catch (Exception e) {
-                            Log.w(TAG, "Exception writing to HttpClient. Removing client from list.", e);
+                            Timber.w(e, "Exception writing to HttpClient. Removing client from list.");
                             httpServerClients.removeClient(httpClient);
                         }
                     }
                 } catch (IOException e) {
-                    Log.e(TAG, "Exception reading audio stream input. Exiting.", e);
+                    Timber.e(e,"Exception reading audio stream input. Exiting.");
                     break;
                 }
             }
 
-            Log.d(TAG, "interrupted, calling HttpStreamServerImpl.stop()");
+            Timber.d("interrupted, calling HttpStreamServerImpl.stop()");
             stop();
         }
     }
@@ -199,7 +197,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                     writeWAVHeaders(newClient.outputStream);
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Exception getting new stream.", e);
+                Timber.e(e, "Exception getting new stream.");
                 return null;
             }
 
@@ -215,7 +213,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
                 httpClient.inputStream.close();
                 httpClient.outputStream.close();
             } catch (IOException e) {
-                Log.e(TAG, "Exception closing HttpClient streams.", e);
+                Timber.e(e, "Exception closing HttpClient streams.");
             }
             httpClients.remove(httpClient);
             for (HttpStreamServerListener listener : listeners) {
