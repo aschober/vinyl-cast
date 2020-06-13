@@ -3,6 +3,9 @@ buildscript {
         jcenter()
         mavenCentral()
     }
+    dependencies {
+        classpath 'org.ajoberstar.grgit:grgit-gradle:4.0.2'
+    }
 }
 
 apply plugin: 'com.android.application'
@@ -16,14 +19,26 @@ android.applicationVariants.all { variant ->
     }
 }
 
+// use grgit to determine versionCode and versionName
+ext {
+    git = org.ajoberstar.grgit.Grgit.open()
+    gitVersionCode = git.tag.list().size()
+    gitVersionName = "${git.describe(tags: true)}"
+}
+
+task printVersion() {
+    println("Version Name: $gitVersionName")
+    println("Version Code: $gitVersionCode")
+}
+
 android {
     compileSdkVersion 29
     defaultConfig {
         applicationId 'tech.schober.vinylcast'
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 2
-        versionName "1.1.0"
+        versionCode gitVersionCode
+        versionName gitVersionName
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
