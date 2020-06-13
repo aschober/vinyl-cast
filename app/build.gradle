@@ -12,10 +12,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 
-// remove GoogleServices / Firebase for 'github' variants
+// disable GoogleServices / Firebase tasks for 'github' variants
 android.applicationVariants.all { variant ->
     if (variant.name.contains('github')) {
         project.tasks.getByName('process' + variant.name.capitalize() + 'GoogleServices').enabled = false
+        if (variant.name.contains('Release')) {
+            project.tasks.getByName('uploadCrashlyticsMappingFile' + variant.name.capitalize()).enabled = false
+        }
     }
 }
 
