@@ -41,9 +41,12 @@ An Android device will be used to capture raw audio from your record player (or 
 The app was developed and testing using a Nexus 6, Pixel 5C, and Pixel 3.
 
 #### :microphone: USB Audio Device
-A USB audio interface is used to capture the raw audio from your Audio Source (e.g. record player) and make the analog audio stream available for recording/streaming by the Vinyl Cast app.  If your analog audio source includes a USB interface, you can use this. If your record player only has analog audio output, I would recommend the [Behringer UCA202](http://a.co/35VGwrV) (without pre-amp), [Behringer UFO202](http://a.co/hThUxAL) (with pre-amp), or [Dynasty ProAudio DA-UA2D](https://www.amazon.com/dp/B07MJ1W974/ref=cm_sw_r_tw_dp_U_x_hlDYEbEJXJB26) (standalone pre-amp with USB interface).
+A USB audio interface is used to capture the raw audio from your Audio Source (e.g. record player) and make the analog audio stream available for recording/streaming by the Vinyl Cast app.  If your analog audio source includes a USB interface, you can use this. If your record player only has analog audio output, I would recommend the [Behringer UCA202](http://a.co/35VGwrV) (without pre-amp), [Behringer UFO202](http://a.co/hThUxAL) (with pre-amp), or [ART USB Phono Plus](https://www.amazon.com/gp/product/B000BBGCCI/) (a standalone pre-amp with USB interface but note while it has option to be powered externally, it ships without an external power supply).
 
 The app was developed and tested using a Behringer UCA202.
+
+Note below devices determined not to be compatible with Android / Vinyl Cast:
+-  Dynasy ProAudio DA-UA2D
 
 #### :electric_plug: USB Adapter
 You will need a way to connect the USB Audio Device to your Android device. Typically, your USB Audio Device has USB-A male connector, and you will need a USB adapter/cable to attach the USB Audio Device to your Android device.
