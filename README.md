@@ -45,8 +45,8 @@ A USB audio interface is used to capture the raw audio from your Audio Source (e
 
 The app was developed and tested using a Behringer UCA202.
 
-Note below devices determined to **not** be compatible with Android / Vinyl Cast:
--  Dynasy ProAudio DA-UA2D
+Below devices determined to **not** be compatible with Android / Vinyl Cast:
+-  [Dynasty ProAudio DA-UA2D](https://dynastyproaudio.com/products/dynasty-proaudio-usb-phono-preamp-audio-phono-preamplifier-excellent-for-dj-system-recording-artist-home-studio-music-recording-riaa-equalized-low-noise-moving-magnet-phono-preamplifier-with-usb-computer-output-a-d-converter-ua2d)
 
 #### :electric_plug: USB Adapter
 You will need a way to connect the USB Audio Device to your Android device. Typically, your USB Audio Device has USB-A male connector, and you will need a USB adapter/cable to attach the USB Audio Device to your Android device.
