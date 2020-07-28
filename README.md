@@ -41,7 +41,7 @@ An Android device will be used to capture raw audio from your record player (or 
 The app was developed and testing using a Nexus 6, Pixel 5C, and Pixel 3.
 
 #### :microphone: USB Audio Device
-A USB audio interface is used to capture the raw audio from your Audio Source (e.g. record player) and make the analog audio stream available for recording/streaming by the Vinyl Cast app.  If your analog audio source includes a USB interface, you can use this. If your record player only has analog audio output, I would recommend the [Behringer UCA202](http://a.co/35VGwrV) (without pre-amp), [Behringer UFO202](http://a.co/hThUxAL) (with pre-amp), or [ART USB Phono Plus](https://www.amazon.com/gp/product/B000BBGCCI/) (a standalone pre-amp with USB interface but note while it has option to be powered externally, it ships without an external power supply).
+A USB audio interface is used to capture the raw audio from your Audio Source (e.g. record player) and make the analog audio stream available for recording/streaming by the Vinyl Cast app.  If your analog audio source includes a USB interface, you can use this. If your record player only has analog audio output, I would recommend the [Behringer UCA202](https://www.behringer.com/product.html?modelCode=P0484) (without pre-amp), [Behringer UFO202](https://www.behringer.com/product.html?modelCode=P0A12) (with pre-amp), or [ART USB Phono Plus](https://artproaudio.com/product/usb-phono-plus-project-series/) (a standalone pre-amp with USB interface but note while it has option to be powered externally, it ships without an external power supply).
 
 The app was developed and tested using a Behringer UCA202.
 
