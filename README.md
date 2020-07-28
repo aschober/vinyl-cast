@@ -45,7 +45,7 @@ A USB audio interface is used to capture the raw audio from your Audio Source (e
 
 The app was developed and tested using a Behringer UCA202.
 
-Note below devices determined not to be compatible with Android / Vinyl Cast:
+Note below devices determined to **not** be compatible with Android / Vinyl Cast:
 -  Dynasy ProAudio DA-UA2D
 
 #### :electric_plug: USB Adapter
