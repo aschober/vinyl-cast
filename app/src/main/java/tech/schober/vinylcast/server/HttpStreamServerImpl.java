@@ -304,7 +304,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     private static final int HEADER_PCM_SUBCHUNK_1_SIZE = 16;
 
     private static final int DEFAULT_CHANNEL_COUNT = 2;
-    private static final int DEFAULT_BITS_PER_SAMPLE = 16;
+    private static final int DEFAULT_BITS_PER_SAMPLE = 24;
     private static final int DEFAULT_SAMPLE_RATE = 48000;
 
     class HttpClientImpl implements HttpClient {
