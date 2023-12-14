@@ -54,8 +54,8 @@ public class VinylCastHelpers {
                                               String httpStreamUrl) {
         createNotificationChannel(context, NOTIFICATION_CHANNEL_ID);
 
-        PendingIntent stopIntent = PendingIntent.getService(context, 0, getServiceActionIntent(VinylCastService.ACTION_STOP_RECORDING, context, serviceClass), PendingIntent.FLAG_CANCEL_CURRENT);
-        PendingIntent mainActivityIntent = PendingIntent.getActivity(context, 0, getActivityIntent(context, MainActivity.class), 0);
+        PendingIntent stopIntent = PendingIntent.getService(context, 0, getServiceActionIntent(VinylCastService.ACTION_STOP_RECORDING, context, serviceClass), PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent mainActivityIntent = PendingIntent.getActivity(context, 0, getActivityIntent(context, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
 
         MediaControllerCompat controller = mediaSession.getController();
         MediaMetadataCompat mediaMetadata = controller.getMetadata();
