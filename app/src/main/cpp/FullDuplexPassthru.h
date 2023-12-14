@@ -42,10 +42,11 @@ public:
 
     virtual oboe::DataCallbackResult onBothStreamsReady(const void *inputData, int numInputFrames,
             void *outputData, int numOutputFrames) {
-        size_t bytesPerFrame = this->getOutputStream()->getBytesPerFrame();
-        size_t bytesFromInput = numInputFrames * bytesPerFrame;
-        size_t bytesForOutput = numOutputFrames * bytesPerFrame;
-        size_t byteDiff = (numOutputFrames - numInputFrames) * bytesPerFrame;
+        size_t outBytesPerFrame = this->getOutputStream()->getBytesPerFrame();
+        size_t inBytesPerFrame = this->getInputStream()->getBytesPerFrame();
+        size_t bytesFromInput = numInputFrames * inBytesPerFrame;
+        size_t bytesForOutput = numOutputFrames * outBytesPerFrame;
+        size_t byteDiff = bytesForOutput - bytesFromInput;
         size_t bytesToZero = (byteDiff > 0) ? byteDiff : 0;
 
         if (bytesFromInput == 0 && bytesForOutput == 0) {
@@ -61,7 +62,7 @@ public:
                 memset((u_char *) outputData + bytesFromInput, 0, bytesToZero);
             } else {
                 // set zeroed bytes to output
-                memset((u_char *) bytesForOutput, 0, bytesToZero);
+                memset((u_char *) outputData , 0, bytesForOutput);
             }
         }
 
