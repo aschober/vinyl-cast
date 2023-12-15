@@ -142,6 +142,11 @@ const char * NativeAudioEngine::getOboeVersion() {
     return oboe::Version::Text;
 }
 
+void NativeAudioEngine::setGainDecibels(double decibels) {
+    LOGD("Gain set to %+.1fdB", decibels);
+    mFullDuplexPassthru.setGainDecibels(decibels);
+}
+
 bool NativeAudioEngine::prepareRecording(JNIEnv *env) {
     LOGD("prepareRecording");
     if (mIsRecording) {
