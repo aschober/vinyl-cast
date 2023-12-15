@@ -6,6 +6,7 @@ import android.util.Pair;
 
 import androidx.annotation.StringDef;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +39,8 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
 
     private Context context;
     private String serverUrlPath;
+    private String imageUrlPath;
+    private byte[] imageData;  // Must be a webp image.
     private int serverPort;
     private InputStream audioStream;
     private int audioBufferSize;
@@ -46,13 +49,16 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
 
     private String streamUrl;
     private String contentType;
+    private String imageUrl;
     private HttpServerClients httpServerClients;
     private Thread readAudioThread;
 
-    public HttpStreamServerImpl(Context context, String serverUrlPath, int serverPort, @AudioStreamProvider.AudioEncoding int audioEncoding, InputStream audioStream, int audioBufferSize) {
+    public HttpStreamServerImpl(Context context, String serverUrlPath, String imageUrlPath, byte[] imageData, int serverPort, @AudioStreamProvider.AudioEncoding int audioEncoding, InputStream audioStream, int audioBufferSize) {
         super(serverPort);
         this.context = context;
         this.serverUrlPath = serverUrlPath;
+        this.imageUrlPath = imageUrlPath;
+        this.imageData = imageData;
         this.serverPort = serverPort;
         this.audioBufferSize = audioBufferSize;
 
@@ -82,6 +88,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
 
         // Set stream url and contentType
         streamUrl = "http://" + VinylCastHelpers.getIpAddress(context) + ":" + serverPort + serverUrlPath;
+        imageUrl = "http://" + VinylCastHelpers.getIpAddress(context) + ":" + serverPort + imageUrlPath;
         Timber.d("HTTP Server streaming at: " + streamUrl);
 
         // Notify listeners
@@ -105,6 +112,7 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
         // clear stream url
         Timber.d("HTTP Server stopped streaming at: " + streamUrl);
         streamUrl = null;
+        imageUrl = null;
 
         // Notify listeners
         for (HttpStreamServerListener listener : listeners) {
@@ -119,6 +127,8 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
     public String getContentType() {
         return this.contentType;
     }
+
+    public String getImageUrl() { return this.imageUrl; }
 
     @Override
     public int getClientCount() {
@@ -145,6 +155,11 @@ public class HttpStreamServerImpl extends NanoHTTPD implements HttpStreamServer 
             }
 
             Response response = newChunkedResponse(Response.Status.OK, contentType, httpClient.inputStream);
+            Timber.d("Sending HTTP Response: " + response);
+            return response;
+        } else if (path.equals(imageUrlPath)) {
+            Timber.d("Received HTTP Request: " + session.getRemoteIpAddress());
+            Response response = newFixedLengthResponse(Response.Status.OK, "image/webp", new ByteArrayInputStream(imageData), imageData.length);
             Timber.d("Sending HTTP Response: " + response);
             return response;
         } else {
