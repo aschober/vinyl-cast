@@ -42,6 +42,7 @@ import tech.schober.vinylcast.audio.AudioRecordStreamProvider;
 import tech.schober.vinylcast.audio.AudioStreamProvider;
 import tech.schober.vinylcast.audio.AudioVisualizer;
 import tech.schober.vinylcast.audio.ConvertAudioStreamProvider;
+import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerImpl;
 import tech.schober.vinylcast.utils.VinylCastHelpers;
@@ -260,6 +261,9 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         int playbackDeviceId = VinylCastHelpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_local_playback_device_id, R.string.prefs_default_local_playback_device_id);
         @AudioStreamProvider.AudioEncoding int audioEncoding = VinylCastHelpers.getSharedPreferenceStringAsInteger(this, R.string.prefs_key_audio_encoding, R.string.prefs_default_audio_encoding);
         boolean lowLatency = PreferenceManager.getDefaultSharedPreferences (this).getBoolean(getString(R.string.prefs_key_low_latency), Boolean.valueOf(getString(R.string.prefs_default_low_latency)));
+        double gainDecibels = VinylCastHelpers.getGainPreference(this);
+
+        NativeAudioEngine.setGainDecibels(gainDecibels);
 
         if (isPlaybackDeviceSelected() && !requestAudioFocus()) {
             Timber.e("Failed to get Audio Focus for playback. Stopping VinylCastService...");

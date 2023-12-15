@@ -24,6 +24,27 @@
 #define OBOE_FULLDUPLEXPASSTHRU_H
 #include "FullDuplexStream.h"
 
+constexpr float kScaleI16ToFloat = (1.0f / 32768.0f);
+
+// Applies gain, overwrites the value pointed to by *sample.
+inline void applyGain(int16_t* sample, float_t gain) {
+    // Convert int16 -> float.
+    float_t fval = static_cast<float_t>(*sample) * kScaleI16ToFloat;
+    // Apply gain.
+    fval *= gain;
+    // Convert float->i16.
+    fval += 1.0; // to avoid discontinuity at 0.0 caused by truncation
+    fval *= 32768.0f;
+    auto ival = static_cast<int32_t>(fval);
+    // clip to 16-bit range
+    if (ival < 0) ival = 0;
+    else if (ival > 0x0FFFF) ival = 0x0FFFF;
+    // center at zero
+    ival -= 32768;
+    // Replace original value.
+    *sample = static_cast<int16_t>(ival);
+}
+
 class FullDuplexPassthru : public FullDuplexStream {
 
 public:
@@ -40,6 +61,11 @@ public:
         mAudioDataCallbackMethod = audioDataCallbackMethod;
     }
 
+    void setGainDecibels(double decibels) {
+        // Convert decibels into a multiplier.
+        mGain = pow(10, decibels/20.0f);
+    }
+
     virtual oboe::DataCallbackResult onBothStreamsReady(const void *inputData, int numInputFrames,
             void *outputData, int numOutputFrames) {
         size_t outBytesPerFrame = this->getOutputStream()->getBytesPerFrame();
@@ -53,6 +79,15 @@ public:
             LOGE("Streams not ready - bytesFromInput: %zu, bytesForOutput: %zu",
                     bytesFromInput, bytesForOutput);
             return oboe::DataCallbackResult::Continue;
+        }
+
+        if (bytesFromInput > 0 && mGain != 1.0) {
+            // Apply gain in-place to inputData.
+            // Assumes we're dealing with int16 samples.
+            void* inputDataEnd = (void*)((u_char *)inputData + bytesFromInput);
+            for (int16_t* sample = (int16_t*)inputData; sample < inputDataEnd; sample++) {
+                applyGain(sample, mGain);
+            }
         }
 
         if (bytesForOutput != 0) {
@@ -94,6 +129,7 @@ public:
 
 private:
     bool mSkipLocalPlayback = false;
+    float_t mGain = 1.0;
 
     JavaVM* mJavaVm;
     jobject mAudioDataCallbackInstance;

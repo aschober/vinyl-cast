@@ -115,6 +115,17 @@ public class VinylCastHelpers {
         return Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(prefsKeyResId), context.getString(prefsDefaultResId)));
     }
 
+    public static double convertGainPrefToDecibels(int intGain) {
+        // Convert from an int with a range of 0-200 to a double with range -10.0-10.0.
+        double decibels = (intGain - 100) / 10.0f;
+        return decibels;
+    }
+
+    public static double getGainPreference(Context context) {
+        int intGain = PreferenceManager.getDefaultSharedPreferences(context).getInt(context.getString(R.string.prefs_key_gain), 100);
+        return convertGainPrefToDecibels(intGain);
+    }
+
     /**
      * Get an OutputStream and InputStream that provides raw audio output.
      * @return Pair<OutputStream, InputStream>

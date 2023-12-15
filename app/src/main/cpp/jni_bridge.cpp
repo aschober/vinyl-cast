@@ -222,4 +222,16 @@ extern "C" {
         }
         return env->NewStringUTF(engine->getOboeVersion());
     }
+
+    JNIEXPORT void JNICALL
+    Java_tech_schober_vinylcast_audio_NativeAudioEngine_setGainDecibels(JNIEnv *env, jclass clazz,
+                                                                        jdouble decibels) {
+        if (engine == nullptr) {
+            LOGE(
+                    "Engine is null, you must call createEngine "
+                    "before calling this method");
+            return;
+        }
+        engine->setGainDecibels(decibels);
+    }
 }

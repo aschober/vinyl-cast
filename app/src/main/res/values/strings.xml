@@ -86,4 +86,8 @@
     <string name="prefs_default_summary_http_clients">-</string>
     <string name="prefs_default_summary_audio_api">-</string>
 
+    <string name="prefs_key_gain">gain</string>
+    <string name="prefs_title_gain">Gain</string>
+    <string name="prefs_summary_gain">Gain: ?.??dB</string>
+
 </resources>

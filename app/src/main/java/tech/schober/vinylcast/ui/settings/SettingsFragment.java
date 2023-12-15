@@ -7,9 +7,6 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
@@ -17,6 +14,7 @@ import androidx.preference.CheckBoxPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.SeekBarPreference;
 
 import com.google.sample.audio_device.AudioDeviceListEntry;
 import com.google.sample.audio_device.AudioDevicePreference;
@@ -38,6 +36,7 @@ import tech.schober.vinylcast.audio.NativeAudioEngine;
 import tech.schober.vinylcast.server.HttpClient;
 import tech.schober.vinylcast.server.HttpStreamServer;
 import tech.schober.vinylcast.server.HttpStreamServerListener;
+import tech.schober.vinylcast.utils.VinylCastHelpers;
 import timber.log.Timber;
 
 import static tech.schober.vinylcast.audio.AudioStreamProvider.AUDIO_ENCODING_AAC;
@@ -107,6 +106,21 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         return true;
     };
 
+    private void updateGainSummary(SeekBarPreference preference, int newValue) {
+        double gain = VinylCastHelpers.convertGainPrefToDecibels(newValue);
+        String summary = String.format("Gain: %+.1fdB", gain);
+        preference.setSummary(summary);
+    }
+
+    private Preference.OnPreferenceChangeListener gainOnChangeListener = (preference, newValue) -> {
+        Timber.d("gainOnChangeListener: " + newValue);
+        int intGain = (int)newValue;
+        updateGainSummary((SeekBarPreference)preference, intGain);
+        double decibels = VinylCastHelpers.convertGainPrefToDecibels(intGain);
+        NativeAudioEngine.setGainDecibels(decibels);
+        return true;
+    };
+
     @Override
     public void onStart() {
         Timber.d("onStart");
@@ -136,6 +150,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         AudioDevicePreference playbackDevicePref = findPreference(R.string.prefs_key_local_playback_device_id);
         CheckBoxPreference lowLatencyPref = findPreference(R.string.prefs_key_low_latency);
         ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
+        SeekBarPreference gainPref = findPreference("gain");
         Preference feedbackPref = findPreference(R.string.prefs_key_feedback);
         Preference androidApiLevelPref = findPreference(R.string.prefs_key_android_api_level);
         Preference appVersionPref = findPreference(R.string.prefs_key_app_version);
@@ -157,6 +172,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
             audioEncodingPref.setEntries(R.array.prefs_audio_encoding_entries);
             audioEncodingPref.setEntryValues(R.array.prefs_audio_encoding_entry_values);
             audioEncodingPref.setOnPreferenceClickListener(disabledPreferenceClickListener);
+        }
+        if (gainPref != null) {
+            gainPref.setOnPreferenceChangeListener(gainOnChangeListener);
+            updateGainSummary(gainPref, gainPref.getValue());
         }
         if (feedbackPref != null && BuildConfig.FLAVOR.equals("playstore")) {
             feedbackPref.setVisible(true);

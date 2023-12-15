@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto" >
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
         app:key="@string/prefs_key_category_audio_devices"
         app:title="@string/prefs_title_category_audio_devices"
@@ -39,6 +40,17 @@
             app:defaultValue="@string/prefs_default_audio_encoding"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
+
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefs_key_gain"
+            app:title="@string/prefs_title_gain"
+            app:summary="@string/prefs_summary_gain"
+            app:iconSpaceReserved="false"
+            app:defaultValue="100"
+            app:showSeekBarValue="false"
+            app:updatesContinuously="true"
+            android:min="0"
+            android:max="200" />
 
         <Preference
             app:key="@string/prefs_key_http_server"
