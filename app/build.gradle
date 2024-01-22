@@ -73,7 +73,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    flavorDimensions "destination"
+    flavorDimensions = ["destination"]
     productFlavors {
         github {
             dimension "destination"
@@ -131,7 +131,7 @@ dependencies {
      * product flavor: playstore
      */
     playstoreApi 'com.google.android.play:core:1.10.3'
-    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:18.6.0'
+    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:18.6.1'
     playstoreImplementation 'com.instabug.library:instabug:12.4.1'
     /*
      * Test
