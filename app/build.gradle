@@ -1,45 +1,52 @@
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.ajoberstar.grgit:grgit-gradle:4.0.2'
-    }
+plugins {
+    id('com.android.application')
+    id('com.google.gms.google-services')
+    id('com.google.firebase.crashlytics')
+    id('org.ajoberstar.grgit')
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'
-
 // disable GoogleServices / Firebase tasks for 'github' variants
-android.applicationVariants.all { variant ->
+android.applicationVariants.configureEach { variant ->
     if (variant.name.contains('github')) {
-        project.tasks.getByName('process' + variant.name.capitalize() + 'GoogleServices').enabled = false
-        if (variant.name.contains('Release')) {
-            project.tasks.getByName('uploadCrashlyticsMappingFile' + variant.name.capitalize()).enabled = false
+        project.tasks.named('process' + variant.name.capitalize() + 'GoogleServices') {
+            Task it -> it.enabled = false
         }
     }
 }
 
-// use grgit to determine versionCode and versionName
-ext {
-    git = org.ajoberstar.grgit.Grgit.open()
-    gitVersionCode = git.tag.list().size()
-    gitVersionName = "${git.describe(tags: true)}"
+// Disable Firebase for github release.
+project.tasks.configureEach {
+    Task it ->
+        if (it.name == 'uploadCrashlyticsMappingFileGithubRelease') {
+            it.enabled = false
+        }
 }
 
-task printVersion() {
+// use grgit to determine versionCode and versionName
+ext {
+    git = grgit.open {
+        dir = "$projectDir/.."
+    }
+    // Provide default values since forked projects don't inherit tags.
+    gitVersionCode =  git.tag.list().size() ?: 1
+    gitVersionName = "${git.describe(tags: true) ?: 'v0.0.0'}"
+}
+
+tasks.register("printVersion") {
     println("Version Name: $gitVersionName")
     println("Version Code: $gitVersionCode")
 }
 
 android {
-    compileSdkVersion 29
+    namespace 'tech.schober.vinylcast'
+    buildFeatures {
+        buildConfig true
+    }
+    compileSdk 34
     defaultConfig {
         applicationId 'tech.schober.vinylcast'
         minSdkVersion 23
-        targetSdkVersion 29
+        targetSdkVersion 34
         versionCode gitVersionCode
         versionName gitVersionName
         ndk {
@@ -66,7 +73,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    flavorDimensions "destination"
+    flavorDimensions = ["destination"]
     productFlavors {
         github {
             dimension "destination"
@@ -77,7 +84,7 @@ android {
             dimension "destination"
             applicationId 'tech.schober.vinylcast.playstore'
             versionNameSuffix "-playstore"
-            dynamicFeatures = [":audio_acr"]
+            // dynamicFeatures = [":audio_acr"]
             firebaseCrashlytics {
                 // Enable processing and uploading of native symbols to Crashlytics
                 // servers. By default, this is disabled to improve build speeds.
@@ -94,35 +101,41 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-    buildToolsVersion = '29.0.3'
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
 }
 
 dependencies {
+    implementation(platform('org.jetbrains.kotlin:kotlin-bom:1.8.0'))
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation "androidx.cardview:cardview:1.0.0"
-    implementation 'androidx.preference:preference:1.1.1'
-    implementation 'androidx.mediarouter:mediarouter:1.1.0'
-    implementation 'com.google.android.gms:play-services-cast-framework:18.1.0'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'androidx.mediarouter:mediarouter:1.6.0'
+    implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'
     // Logging
-    implementation 'com.jakewharton.timber:timber:4.7.1'
+    implementation 'com.jakewharton.timber:timber:5.0.1'
     // HTTP Server
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     // Apache Commons IO for additional InputStream methods
-    implementation 'commons-io:commons-io:2.6'
+    implementation 'commons-io:commons-io:2.15.1'
 
     /*
      * product flavor: playstore
      */
-    playstoreApi 'com.google.android.play:core:1.7.2'
-    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:17.0.0'
-    playstoreImplementation 'com.instabug.library:instabug:9.1.4'
+    playstoreApi 'com.google.android.play:core:1.10.3'
+    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:18.6.1'
+    playstoreImplementation 'com.instabug.library:instabug:12.4.1'
     /*
      * Test
      */
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestCompileOnly 'com.google.android:android-test:4.1.1.4'
 }

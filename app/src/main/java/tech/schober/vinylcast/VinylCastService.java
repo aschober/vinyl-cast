@@ -1,5 +1,6 @@
 package tech.schober.vinylcast;
 
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -200,7 +201,10 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
     private void registerMediaSession() {
         // Create a MediaSessionCompat
-        mediaSession = new MediaSessionCompat(this, TAG);
+        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this, 0, mediaButtonIntent, PendingIntent.FLAG_IMMUTABLE);
+        mediaSession = new MediaSessionCompat(this, TAG, null, pendingIntent);
 
         // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player
         PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder()
