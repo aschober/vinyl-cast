@@ -84,9 +84,11 @@ public:
         if (bytesFromInput > 0 && mGain != 1.0) {
             // Apply gain in-place to inputData.
             // Assumes we're dealing with int16 samples.
-            void* inputDataEnd = (void*)((u_char *)inputData + bytesFromInput);
-            for (int16_t* sample = (int16_t*)inputData; sample < inputDataEnd; sample++) {
-                applyGain(sample, mGain);
+            if (this->getInputStream()->getFormat() == oboe::AudioFormat::I16) {
+                void *inputDataEnd = (void *) ((u_char *) inputData + bytesFromInput);
+                for (int16_t *sample = (int16_t *) inputData; sample < inputDataEnd; sample++) {
+                    applyGain(sample, mGain);
+                }
             }
         }
 
