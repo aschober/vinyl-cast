@@ -108,7 +108,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
 
     private void updateGainSummary(SeekBarPreference preference, int newValue) {
         double gain = VinylCastHelpers.convertGainPrefToDecibels(newValue);
-        String summary = String.format("Gain: %+.1fdB", gain);
+        String summary = getString(R.string.prefs_summary_gain, gain);
         preference.setSummary(summary);
     }
 
@@ -150,7 +150,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         AudioDevicePreference playbackDevicePref = findPreference(R.string.prefs_key_local_playback_device_id);
         CheckBoxPreference lowLatencyPref = findPreference(R.string.prefs_key_low_latency);
         ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
-        SeekBarPreference gainPref = findPreference("gain");
+        SeekBarPreference gainPref = findPreference(R.string.prefs_key_gain);
         Preference feedbackPref = findPreference(R.string.prefs_key_feedback);
         Preference androidApiLevelPref = findPreference(R.string.prefs_key_android_api_level);
         Preference appVersionPref = findPreference(R.string.prefs_key_app_version);
