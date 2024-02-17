@@ -59,7 +59,9 @@ class NativeAudioEngine : public oboe::AudioStreamCallback {
     int32_t getAudioApi();
     const char * getOboeVersion();
 
-   private:
+    void setGainDecibels(double decibels);
+
+private:
     JavaVM* mJavaVm;
     FullDuplexPassthru mFullDuplexPassthru;
     jobject mCallbackObject;

@@ -17,6 +17,7 @@ public enum NativeAudioEngine {
     public static native void setPlaybackDeviceId(int deviceId);
     public static native boolean setAudioApi(int apiType);
     public static native boolean setLowLatency(boolean lowLatency);
+    public static native void setGainDecibels(double decibels);
     public static native void setAudioDataListener(NativeAudioEngineListener listener);
     public static native int getSampleRate();
     public static native int getChannelCount();
