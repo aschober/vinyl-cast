@@ -62,14 +62,10 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
-            // INSTABUG_TOKEN_BETA should be defined in gradle.properties
-            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_BETA)
             debuggable true
         }
         release {
             minifyEnabled true
-            // INSTABUG_TOKEN_LIVE should be defined in gradle.properties
-            buildConfigField("String", "INSTABUG_TOKEN", INSTABUG_TOKEN_LIVE)
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -132,7 +128,6 @@ dependencies {
      */
     playstoreApi 'com.google.android.play:core:1.10.3'
     playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:18.6.1'
-    playstoreImplementation 'com.instabug.library:instabug:12.4.1'
     /*
      * Test
      */

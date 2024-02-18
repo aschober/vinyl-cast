@@ -75,13 +75,6 @@
         app:iconSpaceReserved="false" >
 
         <Preference
-            app:isPreferenceVisible="false"
-            app:key="@string/prefs_key_feedback"
-            app:summary="@string/prefs_summary_feedback"
-            app:title="@string/prefs_title_feedback"
-            app:iconSpaceReserved="false" />
-
-        <Preference
             app:key="@string/prefs_key_audio_api"
             app:title="@string/prefs_title_audio_api"
             app:summary="@string/prefs_default_summary_audio_api"

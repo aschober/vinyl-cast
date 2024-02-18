@@ -43,15 +43,15 @@
     <string name="prefs_title_audio_api">Audio API</string>
     <string name="prefs_title_category_audio_streaming">Audio Streaming</string>
     <string name="prefs_title_audio_encoding">Audio Encoding</string>
+    <string name="prefs_title_gain">Gain</string>
     <string name="prefs_title_http_server">HTTP Server Address</string>
     <string name="prefs_title_http_clients">HTTP Clients Connected</string>
     <string name="prefs_title_category_about">About</string>
-    <string name="prefs_title_feedback">Send Feedback</string>
     <string name="prefs_title_android_api_level">Android API</string>
     <string name="prefs_title_app_version">App Version</string>
 
     <string name="prefs_summary_low_latency"><small>Advanced: Not all devices supported</small></string>
-    <string name="prefs_summary_feedback">Report technical issues or suggest new features</string>
+    <string name="prefs_summary_gain">Gain: %+.1fdB</string>
 
     <string name="prefs_key_category_audio_devices">category_audio_devices</string>
     <string name="prefs_key_recording_device_id">recording_device</string>
@@ -60,10 +60,10 @@
     <string name="prefs_key_audio_api">audio_api</string>
     <string name="prefs_key_category_audio_streaming">category_audio_streaming</string>
     <string name="prefs_key_audio_encoding">audio_encoding</string>
+    <string name="prefs_key_gain">gain</string>
     <string name="prefs_key_http_server">http_server</string>
     <string name="prefs_key_http_clients">http_clients</string>
     <string name="prefs_key_category_about">category_about</string>
-    <string name="prefs_key_feedback">feedback</string>
     <string name="prefs_key_android_api_level">android_api_level</string>
     <string name="prefs_key_app_version">app_version</string>
 
@@ -85,9 +85,4 @@
     <string name="prefs_default_summary_http_server">[not running]</string>
     <string name="prefs_default_summary_http_clients">-</string>
     <string name="prefs_default_summary_audio_api">-</string>
-
-    <string name="prefs_key_gain">gain</string>
-    <string name="prefs_title_gain">Gain</string>
-    <string name="prefs_summary_gain">Gain: %+.1fdB</string>
-
 </resources>

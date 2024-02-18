@@ -151,7 +151,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         CheckBoxPreference lowLatencyPref = findPreference(R.string.prefs_key_low_latency);
         ListPreference audioEncodingPref = findPreference(R.string.prefs_key_audio_encoding);
         SeekBarPreference gainPref = findPreference(R.string.prefs_key_gain);
-        Preference feedbackPref = findPreference(R.string.prefs_key_feedback);
         Preference androidApiLevelPref = findPreference(R.string.prefs_key_android_api_level);
         Preference appVersionPref = findPreference(R.string.prefs_key_app_version);
 
@@ -176,26 +175,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Servic
         if (gainPref != null) {
             gainPref.setOnPreferenceChangeListener(gainOnChangeListener);
             updateGainSummary(gainPref, gainPref.getValue());
-        }
-        if (feedbackPref != null && BuildConfig.FLAVOR.equals("playstore")) {
-            feedbackPref.setVisible(true);
-            feedbackPref.setOnPreferenceClickListener(preference -> {
-                try {
-                    // Use reflection to get Instabug since only available in playstore product flavor
-                    Class instabugClazz = Class.forName("com.instabug.library.Instabug");
-                    if (binder != null) {
-                        //Instabug.setUserAttribute("Audio API", getAudioApiVersionString());
-                        Method setUserAttributeMethod = instabugClazz.getMethod("setUserAttribute", String.class, String.class);
-                        setUserAttributeMethod.invoke(null, "Audio API", getAudioApiVersionString());
-                    }
-                    //Instabug.show();
-                    Method showMethod = instabugClazz.getMethod("show");
-                    showMethod.invoke(null);
-                } catch (ReflectiveOperationException e) {
-                    e.printStackTrace();
-                }
-                return true;
-            });
         }
         if (androidApiLevelPref != null) {
             androidApiLevelPref.setSummaryProvider(preference ->

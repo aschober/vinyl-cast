@@ -5,8 +5,6 @@ import android.os.StrictMode;
 import android.util.Log;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.instabug.library.Instabug;
-import com.instabug.library.invocation.InstabugInvocationEvent;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,10 +34,6 @@ public class VinylCastApplicationBase extends Application {
                     .penaltyDeath()
                     .build());
         }
-
-        new Instabug.Builder(this, BuildConfig.INSTABUG_TOKEN)
-                .setInvocationEvents(InstabugInvocationEvent.NONE)
-                .build();
 
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());

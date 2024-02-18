@@ -6,8 +6,6 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.instabug.library.Instabug;
-import com.instabug.library.invocation.InstabugInvocationEvent;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -19,10 +17,6 @@ public class VinylCastApplicationBase extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
-        new Instabug.Builder(this, BuildConfig.INSTABUG_TOKEN)
-                .setInvocationEvents(InstabugInvocationEvent.NONE)
-                .build();
 
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
