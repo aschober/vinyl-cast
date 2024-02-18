@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Based on FullDuplexPass.h
- * https://github.com/google/oboe/tree/0a78e50b64/samples/LiveEffect/src/main/cpp/FullDuplexPass.h
+ * https://github.com/google/oboe/blob/86165b82/samples/LiveEffect/src/main/cpp/FullDuplexPass.h
  *
  * Modifications Copyright 2020 Allen Schober
  *
@@ -22,7 +22,6 @@
 
 #ifndef OBOE_FULLDUPLEXPASSTHRU_H
 #define OBOE_FULLDUPLEXPASSTHRU_H
-#include "FullDuplexStream.h"
 
 constexpr float kScaleI16ToFloat = (1.0f / 32768.0f);
 
@@ -45,7 +44,7 @@ inline void applyGain(int16_t* sample, float_t gain) {
     *sample = static_cast<int16_t>(ival);
 }
 
-class FullDuplexPassthru : public FullDuplexStream {
+class FullDuplexPassthru : public oboe::FullDuplexStream {
 
 public:
 
@@ -66,10 +65,15 @@ public:
         mGain = pow(10, decibels/20.0f);
     }
 
-    virtual oboe::DataCallbackResult onBothStreamsReady(const void *inputData, int numInputFrames,
-            void *outputData, int numOutputFrames) {
-        size_t outBytesPerFrame = this->getOutputStream()->getBytesPerFrame();
-        size_t inBytesPerFrame = this->getInputStream()->getBytesPerFrame();
+    virtual oboe::DataCallbackResult
+    onBothStreamsReady(
+            const void *inputData,
+            int   numInputFrames,
+            void *outputData,
+            int   numOutputFrames) {
+
+        size_t outBytesPerFrame = getOutputStream()->getBytesPerFrame();
+        size_t inBytesPerFrame = getInputStream()->getBytesPerFrame();
         size_t bytesFromInput = numInputFrames * inBytesPerFrame;
         size_t bytesForOutput = numOutputFrames * outBytesPerFrame;
         size_t byteDiff = bytesForOutput - bytesFromInput;

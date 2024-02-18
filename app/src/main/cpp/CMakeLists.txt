@@ -32,7 +32,6 @@ add_subdirectory(${OBOE_DIR} ./oboe-bin)
 add_library(vinylCast
     SHARED
         NativeAudioEngine.cpp
-        FullDuplexStream.cpp
         jni_bridge.cpp
         ${VINYL_CAST_ROOT_DIR}/debug-utils/trace.cpp)
 target_include_directories(vinylCast
