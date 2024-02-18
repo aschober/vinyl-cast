@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import tech.schober.vinylcast.VinylCastService;
 
 public abstract class VinylCastActivity extends AppCompatActivity implements ServiceConnection {
-    private static final String TAG = "VinyCastActivity";
+    private static final String TAG = "VinylCastActivity";
 
     private boolean serviceBound = false;
     protected VinylCastService.VinylCastBinder binder = null;

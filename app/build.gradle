@@ -127,7 +127,9 @@ dependencies {
      * product flavor: playstore
      */
     playstoreApi 'com.google.android.play:core:1.10.3'
-    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk:18.6.1'
+    playstoreImplementation platform('com.google.firebase:firebase-bom:32.7.2')
+    playstoreImplementation 'com.google.firebase:firebase-crashlytics-ndk'
+    playstoreImplementation 'com.google.firebase:firebase-analytics'
     /*
      * Test
      */
