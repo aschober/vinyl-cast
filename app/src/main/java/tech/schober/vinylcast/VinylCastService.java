@@ -5,9 +5,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,7 +33,9 @@ import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.framework.Session;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
+import com.google.android.gms.common.images.WebImage;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Retention;
@@ -431,11 +436,19 @@ public class VinylCastService extends MediaBrowserServiceCompat {
         return true;
     }
 
+    private byte[] getAlbumArtImage() {
+        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.vinyl_orange_512);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.WEBP, 100, stream);
+        return stream.toByteArray();
+    }
     private boolean startHttpServer(AudioStreamProvider audioStreamProvider) {
         try {
             httpStreamServer = new HttpStreamServerImpl(
                     this,
                     HttpStreamServer.HTTP_SERVER_URL_PATH,
+                    HttpStreamServer.HTTP_SERVER_IMAGE_PATH,
+                    getAlbumArtImage(),
                     HttpStreamServer.HTTP_SERVER_PORT,
                     audioStreamProvider.getAudioEncoding(),
                     audioStreamProvider.getAudioInputStream(),
@@ -531,7 +544,10 @@ public class VinylCastService extends MediaBrowserServiceCompat {
 
         RemoteMediaClient remoteMediaClient = ((VinylCastApplication)getApplication()).getCastSessionManager().getCurrentCastSession().getRemoteMediaClient();
         if (isRecording() && httpStreamServer != null) {
+            WebImage img = new WebImage(Uri.parse(httpStreamServer.getImageUrl()));
             MediaMetadata audioMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK);
+            audioMetadata.putString(MediaMetadata.KEY_TITLE, "Vinyl Cast");
+            audioMetadata.addImage(img);
             String url = httpStreamServer.getStreamUrl();
             MediaInfo mediaInfo = new MediaInfo.Builder(url)
                     .setContentType(httpStreamServer.getContentType())

@@ -14,7 +14,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:name=".VinylCastApplication"
+        android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
+        <!-- usesCleartextTraffic is needed to load the "album art" image served by the vinylcast app -->
 
         <activity android:name=".ui.main.MainActivity" android:exported="true">
             <!-- Launch activity as default from Android Studio -->
